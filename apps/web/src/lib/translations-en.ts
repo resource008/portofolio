@@ -8,7 +8,6 @@ export const EN: Record<string, string> = {
   Bahasa: "Language",
   Keluar: "Log out",
   "Menu akun": "Account menu",
-  // ProjectsSection.tsx
   "Gagal memuat detail proyek": "Failed to load project details",
   "Gagal menyimpan": "Failed to save",
   "Judul proyek (blok Judul) dan kategori wajib diisi": "Project title (Title block) and category are required",
@@ -97,7 +96,6 @@ export const EN: Record<string, string> = {
   "Unggah video": "Upload video",
   "PNG/JPG/WEBP/GIF — maks 5MB": "PNG/JPG/WEBP/GIF — max 5MB",
   "MP4/WEBM/MOV — maks 50MB, atau tempel URL di bawah": "MP4/WEBM/MOV — max 50MB, or paste a URL below",
-  // components/admin/EducationSection.tsx
   "Belum ada dokumen": "No documents yet",
   "Belum ada pendidikan": "No education yet",
   "Belum ada sertifikat.": "No certificates yet.",
@@ -144,7 +142,6 @@ export const EN: Record<string, string> = {
   "{count} sertifikat": "{count} certificates",
   "{count} tautan": "{count} links",
   "Data pendidikan \"{name}\" akan dihapus permanen.": "The education entry \"{name}\" will be permanently deleted.",
-  // components/admin/ExperienceSection.tsx
   "Belum ada pengalaman": "No experience yet",
   "Data pengalaman berhasil dihapus.": "Experience entry deleted successfully.",
   "Foto ({count})": "Photos ({count})",
@@ -155,7 +152,6 @@ export const EN: Record<string, string> = {
   "Tambahkan pengalaman kerja atau organisasi.": "Add work or organizational experience.",
   "Tampilkan detail": "Show details",
   "Data pengalaman \"{position}\" di {company} akan dihapus permanen.": "The experience \"{position}\" at {company} will be permanently deleted.",
-  // components/admin/experience-fields.tsx
   "Daftar bernomor": "Numbered list",
   "Foto": "Photos",
   "Hapus foto": "Remove photo",
@@ -167,7 +163,6 @@ export const EN: Record<string, string> = {
   "Pratinjau foto {n}": "Preview photo {n}",
   "Saya masih bekerja di sini": "I currently work here",
   "domain perusahaan, mis. tokopedia.com": "company domain, e.g. tokopedia.com",
-  // components/admin/history-fields.tsx
   "Berikutnya": "Next",
   "Hapus pilihan": "Clear selection",
   "Pilih Bulan & Tahun": "Select Month & Year",
@@ -181,19 +176,16 @@ export const EN: Record<string, string> = {
   "Agu": "Aug",
   "Okt": "Oct",
   "Des": "Dec",
-  // pages/admin/ExperienceFormPage.tsx
   "Data pengalaman berhasil disimpan.": "Experience entry saved successfully.",
   "Data tidak ditemukan": "Data not found",
   "Kelola pengalaman kerja dan organisasi.": "Manage work and organizational experience.",
   "Pengalaman yang ingin diedit tidak ditemukan.": "The experience you want to edit was not found.",
   "Tambah Pengalaman": "Add Experience",
   "Ubah Pengalaman": "Edit Experience",
-  // lib/nav.ts
   "Dasbor": "Dashboard",
   "Ubah Konten": "Edit Content",
   "Tautan Media": "Media Links",
   "Pengumuman": "Announcements",
-  // lib/sections.ts
   "Hero & Profil": "Hero & Profile",
   "Kelola hero, profil, keahlian unggulan, dan tech stack pada halaman utama.": "Manage the hero, profile, featured skills, and tech stack on the home page.",
   "Pendidikan": "Education",
@@ -201,17 +193,14 @@ export const EN: Record<string, string> = {
   "Pengalaman": "Experience",
   "Proyek": "Projects",
   "Kelola daftar proyek dan postingan.": "Manage the list of projects and posts.",
-  // lib/announcements.ts
   "Info": "Info",
   "Pembaruan": "Update",
   "Postingan Baru": "New Post",
   "Umum": "General",
   "Teks bebas untuk info atau pembaruan.": "Free text for info or updates.",
   "Promosikan postingan/proyek tertentu.": "Promote specific posts/projects.",
-  // hooks/use-dashboard-transition.ts
   "Mohon Tunggu": "Please Wait",
   "Selamat Datang!": "Welcome!",
-  // components/admin/NotificationsMenu.tsx
   "Gagal menandai dibaca": "Failed to mark as read",
   "Semua ditandai dibaca": "All marked as read",
   "Gagal menandai semua": "Failed to mark all",
@@ -226,12 +215,10 @@ export const EN: Record<string, string> = {
   "Belum ada notifikasi": "No notifications yet",
   "Aktivitas terbaru akan muncul di sini.": "Recent activity will appear here.",
   "Tandai dibaca": "Mark as read",
-  // components/admin/AdminLayout.tsx
   "Kotak Masuk": "Inbox",
   "Draf Proyek": "Project Draft",
   "Buka/tutup sidebar": "Toggle sidebar",
   "Tutup sidebar": "Close sidebar",
-  // components/admin/AnnouncementManager.tsx
   "Pengumuman disimpan.": "Announcement saved.",
   "Ditampilkan": "Shown",
   "Disembunyikan": "Hidden",
@@ -269,21 +256,17 @@ export const EN: Record<string, string> = {
   "Tampilkan pengumuman": "Show announcement",
   "Sembunyikan": "Hide",
   "Tampilkan": "Show",
-  // components/ui (dialog, drawer, sheet, spinner, pagination, breadcrumb, combobox, sidebar)
   "Tutup": "Close",
   "Memuat": "Loading",
   "Halaman lainnya": "More pages",
   "Lainnya": "More",
   "Menampilkan sidebar seluler.": "Displays the mobile sidebar.",
-  // pages/admin/LoginPage.tsx
   "Gagal memulai masuk dengan GitHub.": "Failed to start GitHub sign-in.",
   "Masuk ke Admin": "Sign in to Admin",
   "Gagal masuk": "Sign-in failed",
   "Masuk dengan GitHub": "Sign in with GitHub",
   "Mengalihkan ke GitHub...": "Redirecting to GitHub...",
-  // pages/admin/AnnouncementsPage.tsx
   "Kelola pengumuman umum dan promosi postingan proyek.": "Manage general announcements and project post promotions.",
-  // pages/admin/DashboardPage.tsx
   "Jumlah Suka": "Total Likes",
   "Dibagikan": "Shares",
   "Total Proyek": "Total Projects",
@@ -297,7 +280,6 @@ export const EN: Record<string, string> = {
   "Foto Proyek": "Project Photos",
   "Foto Pengalaman": "Experience Photos",
   "Terpakai": "Used",
-  // pages/admin/InboxPage.tsx
   "Pesan dihapus": "Message deleted",
   "Pesan berhasil dihapus.": "Message deleted successfully.",
   "Terjadi kesalahan.": "Something went wrong.",
@@ -310,7 +292,6 @@ export const EN: Record<string, string> = {
   "Hapus pesan": "Delete message",
   "Gagal memuat pesan.": "Failed to load message.",
   "Pesan": "Message",
-  // pages/admin/SocialLinksPage.tsx
   "Tautan media berhasil disimpan.": "Media link saved successfully.",
   "Tautan media berhasil dihapus.": "Media link deleted successfully.",
   "Geser untuk mengatur urutan.": "Drag to reorder.",
@@ -321,7 +302,6 @@ export const EN: Record<string, string> = {
   "Ubah Tautan": "Edit Link",
   "Tambah Tautan": "Add Link",
   "https://… atau nama@email.com": "https://… or name@email.com",
-  // pages/admin/ContentPage.tsx
   "Subjudul (nama lengkap) wajib diisi.": "Subheading (full name) is required.",
   "Deskripsi wajib diisi.": "Description is required.",
   "Keahlian unggulan #{n} wajib diisi.": "Highlight skill #{n} is required.",
@@ -343,7 +323,6 @@ export const EN: Record<string, string> = {
   "Belum ada item dipilih.": "No items selected yet.",
   "Cari {item}": "Search {item}",
   "Cari {item}…": "Search {item}…",
-  // components/admin/MediaPickerDialog.tsx
   "File dihapus": "File deleted",
   "File berhasil dihapus dari riwayat.": "File was removed from history.",
   "Gagal menghapus file.": "Failed to delete file.",
@@ -369,10 +348,8 @@ export const EN: Record<string, string> = {
   "File sedang dipakai dan tidak bisa dihapus": "File is in use and cannot be deleted",
   "Bersihkan": "Clear",
   "Gunakan ({count})": "Use ({count})",
-  // components/admin/MediaPreviewDialog.tsx
   "Foto sebelumnya": "Previous photo",
   "Foto berikutnya": "Next photo",
-  // components/admin/ImageCropUpload.tsx
   "Logo": "Logo",
   "{label} terlalu besar": "{label} is too large",
   "{label} tersimpan": "{label} saved",
@@ -384,7 +361,6 @@ export const EN: Record<string, string> = {
   "Belum ada {label} diunggah.": "No {label} uploaded yet.",
   "Potong {label}": "Crop {label}",
   "Perbesar": "Zoom",
-  // components/admin/RichTextEditor.tsx
   "Tulis konten proyek…": "Write project content…",
   "Coret": "Strikethrough",
   "Judul besar": "Large heading",
@@ -397,11 +373,9 @@ export const EN: Record<string, string> = {
   "URL Video": "Video URL",
   "https://www.youtube.com/watch?v=… atau URL file .mp4": "https://www.youtube.com/watch?v=… or an .mp4 file URL",
   "Sisipkan": "Insert",
-  // components/admin/unsaved-changes.tsx
   "Perubahan belum disimpan": "Unsaved changes",
   "Ada perubahan yang belum disimpan. Simpan dulu sebelum meninggalkan halaman ini?": "You have unsaved changes. Save them before leaving this page?",
   "Buang perubahan": "Discard changes",
-  // components/admin/FileUpload.tsx, FileUploadSplit.tsx
   "File": "File",
   "Pilih foto": "Choose photo",
   "Pilih file": "Choose file",
@@ -409,7 +383,6 @@ export const EN: Record<string, string> = {
   "Klik untuk memilih atau mengunggah file": "Click to choose or upload a file",
   "File terunggah": "Uploaded file",
   "Belum ada file diunggah.": "No file uploaded yet.",
-  // components/admin/HeroProfileUploads.tsx
   "Foto Konten": "Content Photo",
   "File CV": "CV File",
   "Label": "Label",

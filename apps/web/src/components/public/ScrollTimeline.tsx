@@ -6,24 +6,12 @@ import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/** Garis pemicu di viewport (70% tinggi layar). Ujung isian bar selalu berada
-    di garis ini, jadi checkpoint menyala tepat saat bar mencapainya. */
 const VIEWPORT_LINE = "70%";
-/** Jarak puncak baris ke titik tengah checkpoint (mt-6 + setengah size-6). */
 const DOT_CENTER = 36;
 /** Isian bar dibuka dari atas ke bawah lewat clip-path (gradien tidak gepeng). */
 const FILL_EMPTY = "inset(0% 0% 100% 0% round 9999px)";
 const FILL_FULL = "inset(0% 0% 0% 0% round 9999px)";
 
-/**
- * Timeline vertikal berbasis GSAP ScrollTrigger: bar progress terisi mengikuti
- * scroll, dan setiap checkpoint (dengan label periode di sampingnya) menyala
- * lalu menampilkan kartunya saat bar mencapainya. Saat scroll kembali ke atas
- * melewati checkpoint, kartu disembunyikan lagi dengan animasi kebalikannya.
- *
- * Layout: desktop = [checkpoint] [periode] [kartu]; mobile = [checkpoint]
- * [periode di atas kartu].
- */
 export function ScrollTimeline<T>({
   items,
   getKey,
@@ -33,10 +21,8 @@ export function ScrollTimeline<T>({
 }: {
   items: T[];
   getKey: (item: T) => string | number;
-  /** Label di samping checkpoint, mis. periode. */
   renderLabel: (item: T) => ReactNode;
   renderItem: (item: T) => ReactNode;
-  /** Padding atas/bawah — rel bar ikut membentang di area padding ini. */
   className?: string;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -61,8 +47,6 @@ export function ScrollTimeline<T>({
         return;
       }
 
-      // Bar progress: membentang dari puncak sampai dasar timeline; isian
-      // bergerak linear sehingga ujungnya menempel di garis viewport.
       gsap.fromTo(
         fill,
         { clipPath: FILL_EMPTY },
@@ -126,8 +110,6 @@ export function ScrollTimeline<T>({
 
   return (
     <div className={cn("relative", className)} ref={rootRef}>
-      {/* Track progress bar di tepi kiri (sejajar header), center-nya 12px =
-          tengah kolom checkpoint. */}
       <div
         aria-hidden="true"
         className="absolute top-0 bottom-0 left-[7px] w-2.5 rounded-full bg-muted p-0.5 ring-1 ring-border ring-inset"
@@ -145,7 +127,6 @@ export function ScrollTimeline<T>({
             data-timeline-row
             key={getKey(item)}
           >
-            {/* Periode: desktop di kanan checkpoint; mobile di atas kartu. */}
             <div
               className="invisible col-start-2 row-start-1 pb-2 font-medium text-muted-foreground text-sm tabular-nums whitespace-nowrap opacity-0 sm:mt-6 sm:pb-0 sm:leading-6"
               data-timeline-label
@@ -153,7 +134,6 @@ export function ScrollTimeline<T>({
               {renderLabel(item)}
             </div>
 
-            {/* Checkpoint: abu-abu sebelum tercapai, menyala saat aktif. */}
             <span
               aria-hidden="true"
               className="group relative z-10 col-start-1 row-span-2 row-start-1 mt-6 grid size-6 place-items-center rounded-full border-2 border-border bg-background transition-colors duration-300 data-active:border-blue-500 data-active:shadow-[0_0_0_4px] data-active:shadow-blue-500/20 sm:row-span-1"

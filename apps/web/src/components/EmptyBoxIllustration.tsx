@@ -1,10 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/**
- * "Empty box" illustration. The original SVG used hardcoded gradient colors;
- * here every stop is mapped to `currentColor` with different opacity levels so
- * the whole illustration follows the text color (e.g. `text-primary`).
- */
 export function EmptyBoxIllustration({ className }: { className?: string }) {
   return (
     <svg

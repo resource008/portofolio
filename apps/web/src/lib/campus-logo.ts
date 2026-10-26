@@ -8,7 +8,6 @@ interface Campus {
 }
 
 const CAMPUSES: Campus[] = [
-  // Indonesia
   { name: "Institut Teknologi Del (IT Del)", domain: "del.ac.id", aliases: ["itdel", "institutteknologidel", "del"] },
   { name: "Institut Teknologi Bandung (ITB)", domain: "itb.ac.id", aliases: ["itb", "institutteknologibandung"] },
   { name: "Universitas Indonesia (UI)", domain: "ui.ac.id", aliases: ["ui", "universitasindonesia"] },
@@ -38,7 +37,6 @@ const CAMPUSES: Campus[] = [
   { name: "Universitas Kristen Satya Wacana (UKSW)", domain: "uksw.edu", aliases: ["uksw", "satya wacana"] },
   { name: "Universitas Islam Indonesia (UII)", domain: "uii.ac.id", aliases: ["uii", "universitasislamindonesia"] },
   { name: "Universitas Muhammadiyah Yogyakarta (UMY)", domain: "umy.ac.id", aliases: ["umy", "muhammadiyah yogyakarta"] },
-  // Luar negeri
   { name: "Massachusetts Institute of Technology (MIT)", domain: "mit.edu", aliases: ["mit", "massachusettsinstituteoftechnology"] },
   { name: "Stanford University", domain: "stanford.edu", aliases: ["stanford"] },
   { name: "Harvard University", domain: "harvard.edu", aliases: ["harvard"] },
@@ -68,10 +66,8 @@ const CAMPUSES: Campus[] = [
 
 const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-/** Names shown in the campus dropdown. */
 export const CAMPUS_NAMES: string[] = CAMPUSES.map((campus) => campus.name);
 
-/** Resolve a campus name (e.g. "IT Del") to a logo URL. */
 export function campusLogo(name: string | null | undefined): string | null {
   const normalized = normalize(name ?? "");
   if (!normalized) return null;
@@ -85,28 +81,24 @@ export function campusLogo(name: string | null | undefined): string | null {
   return match ? favicon(match.domain) : null;
 }
 
-/** Reverse lookup: find the campus name that produced a given logo URL. */
 export function campusNameFromLogo(url: string | null | undefined): string | null {
   if (!url) return null;
   const match = CAMPUSES.find((campus) => favicon(campus.domain) === url);
   return match ? match.name : null;
 }
 
-/** Build a favicon URL for any domain, e.g. "del.ac.id". */
 export function logoFromDomain(domain: string | null | undefined): string | null {
   const value = (domain ?? "").trim().toLowerCase();
   if (!value || !value.includes(".") || /\s/.test(value)) return null;
   return favicon(value);
 }
 
-/** Extract the domain from a stored favicon URL. */
 export function domainFromLogo(url: string | null | undefined): string | null {
   if (!url) return null;
   const match = url.match(/[?&]domain=([^&]+)/);
   return match ? decodeURIComponent(match[1]) : null;
 }
 
-/** The text to show in the picker for a stored logo URL. */
 export function campusSourceText(url: string | null | undefined): string {
   return campusNameFromLogo(url) ?? domainFromLogo(url) ?? "";
 }

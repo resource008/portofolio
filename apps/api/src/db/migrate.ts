@@ -2,10 +2,6 @@ import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { sql } from "./client";
 
-/**
- * Minimal raw-SQL migration runner: applies migrations/*.sql once, in order,
- * tracking applied files in the `migrations` table. No ORM.
- */
 export async function runMigrations(): Promise<void> {
   await sql`
     CREATE TABLE IF NOT EXISTS migrations (

@@ -178,7 +178,6 @@ export default function SocialLinksPage() {
           </div>
         </Card>
       ) : items.length === 0 ? (
-        // Empty state tanpa background — logo + judul langsung di tengah.
         <Empty>
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -209,7 +208,6 @@ export default function SocialLinksPage() {
           </SortableContext>
         </DndContext>
       )}
-      {/* FAB — tombol tambah melayang di pojok kanan bawah. */}
       <Button
         aria-label={t("Tambah tautan")}
         className="fixed right-6 bottom-6 z-40 size-16 sm:size-16 rounded-full shadow-lg before:rounded-full"

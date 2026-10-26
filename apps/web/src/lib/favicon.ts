@@ -3,10 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { HeroProfile } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
 
-/**
- * Favicon tab browser mengikuti logo yang diunggah di admin (profile.logo_url).
- * Memakai query ["profile"] yang sama dengan header, jadi tidak ada request ganda.
- */
 export function useFavicon() {
   const { data } = useQuery({
     queryKey: ["profile"],

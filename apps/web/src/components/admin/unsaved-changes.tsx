@@ -25,7 +25,6 @@ import { useLanguage } from "@/lib/language";
 export interface UnsavedChangesGuard {
   isDirty: () => boolean;
   save: () => Promise<unknown>;
-  /** Ketika aktif, perubahan tersimpan diam-diam saat keluar tanpa dialog konfirmasi. */
   autoSaveOnLeave?: boolean;
 }
 
@@ -36,11 +35,6 @@ interface UnsavedChangesContextValue {
 
 const UnsavedChangesContext = createContext<UnsavedChangesContextValue | null>(null);
 
-/**
- * Holds the currently active editor guard and renders the shared confirmation
- * dialog. Wrap the admin shell with this so every page can register a guard and
- * every navigation can be intercepted.
- */
 export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
   const { t } = useLanguage();
   const guardRef = useRef<UnsavedChangesGuard | null>(null);
@@ -70,7 +64,7 @@ export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
           setHasGuard(false);
           proceed();
         };
-        // Simpan sebagai draf lalu lanjut keluar (gagal pun tetap lanjut).
+        // Gagal simpan pun tetap lanjut keluar.
         guard.save().then(finish, finish);
         return;
       }
@@ -82,8 +76,6 @@ export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
     proceed();
   }, []);
 
-  // Browser back/forward (and any navigation that does not pass through
-  // `requestLeave`, e.g. a link click) is intercepted by the router blocker.
   const shouldBlock = useCallback<BlockerFunction>(
     ({ currentLocation, nextLocation }) =>
       currentLocation.pathname !== nextLocation.pathname && Boolean(guardRef.current),
@@ -115,7 +107,6 @@ export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [blocker.state]);
 
-  // Native reload / tab close.
   useEffect(() => {
     if (!hasGuard) return;
     const handler = (event: BeforeUnloadEvent) => {
@@ -156,8 +147,7 @@ export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
       closeDialog();
       proceed?.();
     } catch {
-      // Saving failed (the page shows its own error toast); keep the dialog open
-      // so the user can retry or cancel.
+      // Saving failed (the page shows its own toast); keep the dialog open.
     } finally {
       setSaving(false);
     }
@@ -202,7 +192,6 @@ export function UnsavedChangesProvider({ children }: { children: ReactNode }) {
   );
 }
 
-/** Register the current page/editor with the unsaved-changes guard. */
 export function useUnsavedChangesGuard({
   isDirty,
   onSave,
@@ -228,10 +217,6 @@ export function useUnsavedChangesGuard({
   }, [register, isDirty, autoSaveOnLeave]);
 }
 
-/**
- * Wrap a local "leave" action (closing a dialog, returning from an editor) so it
- * goes through the same confirmation flow as a route change.
- */
 export function useRequestLeave(): (proceed: () => void) => void {
   const context = useContext(UnsavedChangesContext);
   return context?.requestLeave ?? ((proceed: () => void) => proceed());

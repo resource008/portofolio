@@ -40,24 +40,18 @@ import { useIntroDone } from "@/lib/intro";
 const PILL =
   "inline-flex items-center rounded-full border border-neutral-900/15 text-neutral-800 dark:border-white/15 dark:text-neutral-200";
 
-/** Berapa detik teks diam di posisi awal sebelum running text mulai. */
 const TICKER_HOLD_SECONDS = 1.5;
 
 interface AnnouncementTickerItem {
   icon: React.ComponentType<React.ComponentProps<"svg">>;
-  /** Label tipe, ditampilkan di badge samping ikon (mis. "Update"). */
   label: string;
-  /** Kelas warna badge (background/border/text). */
   badge: string;
   text: string;
-  /** Project terkait, untuk tombol yang membuka drawer postingannya. */
   project?: Project;
 }
 
-/** Kecepatan running text pengumuman (px/detik). */
 const MARQUEE_PX_PER_SECOND = 50;
 
-/** Ikon + badge menyesuaikan jenis & tipe announcement: SparklesIcon/project, ikon tipe untuk umum. */
 function announcementMessages(
   list: ProjectAnnouncement[],
 ): AnnouncementTickerItem[] {
@@ -101,9 +95,7 @@ export function AnnouncementTicker({
   onItemChange,
   bare = false,
 }: {
-  /** Tanpa frame: hanya ikon + teks (dipakai di strip berwarna). */
   bare?: boolean;
-  /** Dipanggil tiap pesan aktif berganti — dipakai strip untuk mengikuti warnanya. */
   onItemChange?: (item: AnnouncementTickerItem) => void;
 } = {}) {
   const { data } = useQuery({
@@ -119,9 +111,7 @@ export function AnnouncementTicker({
     [data],
   );
   const [index, setIndex] = useState(0);
-  // Project yang dibuka dari tombol di ticker — tampil sebagai drawer di halaman ini.
   const [openedProject, setOpenedProject] = useState<Project | null>(null);
-  // Explicit pill width so it can morph between sizes; measured from the content.
   const [pillWidth, setPillWidth] = useState<number | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
 
@@ -131,8 +121,7 @@ export function AnnouncementTicker({
     );
   }, [messages.length]);
 
-  // Content width + the pill's own padding/border, so the button stays inside
-  // the pill instead of being clipped at the right edge.
+  // Add the pill's padding/border so the button isn't clipped at the right edge.
   const handleMeasure = useCallback((contentWidth: number) => {
     const node = pillRef.current;
     if (!node) return;
@@ -145,7 +134,6 @@ export function AnnouncementTicker({
     setPillWidth(Math.round(contentWidth + chrome));
   }, []);
 
-  // Keep index in range if the announcement list shrinks.
   useEffect(() => {
     setIndex((current) => (current >= messages.length ? 0 : current));
   }, [messages.length]);
@@ -205,11 +193,8 @@ function TickerMessage({
 }) {
   const Icon = item.icon;
   const message = item.text;
-  // Teks pendek (statis): waktu baca ~10 karakter/detik.
   const readDuration = Math.min(30, Math.max(4, message.length / 10));
 
-  // Measure the text to decide between static (fits the pill) and a single run
-  // (overflows). State lives here so it resets cleanly on every message.
   const textRef = useRef<HTMLSpanElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [textWidth, setTextWidth] = useState(0);
@@ -219,14 +204,11 @@ function TickerMessage({
     if (textRef.current) setTextWidth(textRef.current.offsetWidth);
   }, [message]);
 
-  // Report the content's natural width so the pill can morph its size smoothly.
   useLayoutEffect(() => {
     if (rootRef.current) onMeasure(rootRef.current.offsetWidth);
   }, [message, textWidth, onMeasure]);
 
   useEffect(() => {
-    // Strip (bare): teks boleh memakai seluruh lebar strip — dikurangi padding,
-    // ikon, dan tombol — bukan batas tetap per breakpoint seperti pill.
     const strip = bare ? rootRef.current?.closest<HTMLElement>("[data-ticker-strip]") : null;
     if (strip) {
       const measure = () => {
@@ -245,16 +227,10 @@ function TickerMessage({
     return () => window.removeEventListener("resize", onResize);
   }, [bare, item.project]);
 
-  // Teks utuh & diam bila muat (di strip: selebar strip); hanya berjalan bila meluap.
   const viewportWidth = Math.min(textWidth, maxWidth);
   const shouldRun = textWidth > viewportWidth;
-  // Teks panjang (berjalan): kecepatan tetap per piksel tanpa batas atas,
-  // jadi makin panjang teksnya makin lama berjalan — bukan makin cepat.
   const runDuration = Math.max(readDuration, textWidth / MARQUEE_PX_PER_SECOND);
 
-  // Short text: advance after the read duration. Long text: advance when the
-  // one-shot scroll animation ends, so the pill transition starts exactly when
-  // the running text has finished.
   useEffect(() => {
     if (shouldRun) return;
     const timer = setTimeout(onAdvance, readDuration * 1000);
@@ -264,13 +240,11 @@ function TickerMessage({
   return (
     <motion.div
       ref={rootRef}
-      // Pesan baru naik dari bawah lalu memantul; pesan lama keluar ke atas.
       animate={{ opacity: 1, y: 0, transition: { type: "spring", duration: 0.8, bounce: 0.25, delay: 0.3 } }}
       className="flex w-max items-center gap-2"
       exit={{ opacity: 0, y: -12, transition: { duration: 0.4, ease: "easeIn" } }}
       initial={{ opacity: 0, y: 16 }}
     >
-      {/* Mode bare: ikon dirender oleh AnnouncementBar di sisi kiri strip. */}
       {bare ? null : (
         <span
           className={cn(
@@ -369,7 +343,6 @@ function TechLogo({ name }: { name: string }) {
   );
 }
 
-/** Marquee tech stack — hanya ditampilkan di desktop (di dalam hero). */
 function TechMarquee({ names }: { names: string[] }) {
   if (names.length === 0) return null;
 
@@ -397,7 +370,6 @@ function TechMarquee({ names }: { names: string[] }) {
   );
 }
 
-/** Bar horizontal penuh untuk tech stack di mobile — logo dalam marquee. */
 function MobileTechBar({ names }: { names: string[] }) {
   if (names.length === 0) return null;
 
@@ -430,10 +402,6 @@ function MobileTechBar({ names }: { names: string[] }) {
   );
 }
 
-/**
- * Section tech stack (marquee otomatis) untuk mobile & tablet — berlatar beda,
- * dipasang di antara Hero dan Pendidikan, menggantikan tech stack di hero.
- */
 export function HeroTechBar() {
   const { data: profile } = useQuery({
     queryKey: ["profile"],
@@ -445,7 +413,6 @@ export function HeroTechBar() {
   return (
     <section className="border-y border-neutral-900/10 bg-neutral-900 py-10 lg:hidden dark:border-white/10 dark:bg-neutral-900">
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 sm:px-6">
-        {/* Badge miring ~15° ke kiri. */}
         <span className="ms-2 inline-flex -rotate-[15deg] items-center rounded-full border border-white/20 px-4 py-1.5 font-medium text-neutral-100 text-sm">
           Tech Stack
         </span>
@@ -455,10 +422,6 @@ export function HeroTechBar() {
   );
 }
 
-/**
- * Strip running announcement — hanya dirender bila ada
- * announcement aktif. Dipasang di atas header.
- */
 export function AnnouncementBar() {
   const { data } = useQuery({
     queryKey: ["project-announcements"],
@@ -483,8 +446,7 @@ export function AnnouncementBar() {
 
   if (messages.length === 0) return null;
 
-  // Lapisan bg-background di bawah agar warna tipe (transparan) tetap terbaca
-  // walau header belum berlatar saat halaman belum di-scroll.
+  // Lapisan bg-background agar warna tipe (transparan) terbaca sebelum header berlatar.
   return (
     <div className="bg-background">
       <div
@@ -493,11 +455,7 @@ export function AnnouncementBar() {
           badge ?? "border-border/60 bg-background/80",
         )}
       >
-        {/* Kontainer sama dengan hero: di bawah lg ikon + teks berdampingan rata kiri;
-            di lg ikon menempel di kiri, teks di tengah. */}
         <div data-ticker-strip className="relative mx-auto flex h-10 max-w-6xl items-center justify-start gap-2 px-4 sm:px-6 lg:justify-center lg:px-12">
-          {/* Ikon berganti dengan animasi hanya bila jenis pengumuman berbeda
-              (key = label); pesan sejenis berikutnya tidak memicu animasi. */}
           <span className="relative size-5 shrink-0 lg:absolute lg:top-1/2 lg:left-6 lg:-translate-y-1/2">
             <AnimatePresence initial={false} mode="wait">
               {Icon ? (
@@ -520,8 +478,6 @@ export function AnnouncementBar() {
   );
 }
 
-/** Dua chevron atas yang mengalir ke atas bergantian — isyarat "scroll untuk
- * melihat detail" dengan panah mengarah ke atas. */
 function ScrollMouse() {
   const chevron = "absolute left-[2px] top-1/2 -mt-2.5";
   return (
@@ -565,10 +521,8 @@ export function HeroSection() {
   const [cvOpen, setCvOpen] = useState(false);
   const sectionRef = useRef<HTMLElement | null>(null);
   const introDone = useIntroDone();
-  // Entrance hero menunggu intro situs selesai membuka layar. Gagal memuat
-  // profil tetap memutar entrance agar hero tidak tersembunyi.
+  // Gagal memuat profil tetap memutar entrance agar hero tidak tersembunyi.
   useHeroEntrance(sectionRef, (Boolean(profile) || profileError) && introDone);
-  // Sembunyikan isyarat "scroll untuk melihat detail" begitu user mulai scroll.
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -593,7 +547,6 @@ export function HeroSection() {
     >
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 sm:px-6">
         <div className="flex flex-1 items-center py-6">
-          {/* Mobile & tablet: satu kolom. Desktop: dua kolom. */}
           <div className="grid w-full items-center gap-8 lg:grid-cols-2 lg:gap-10">
             <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
               {roles.length > 0 && (
@@ -637,8 +590,6 @@ export function HeroSection() {
                 </p>
               )}
 
-              {/* Tech stack (desktop): badge miring + marquee ikon. Di mobile &
-                  tablet tampil sebagai HeroTechBar di atas section Pendidikan. */}
               {techStacks.length > 0 && (
                 <div className="mt-9 hidden w-full flex-col items-start lg:flex">
                   <span
@@ -658,7 +609,6 @@ export function HeroSection() {
               )}
             </div>
 
-            {/* ProfileCard disembunyikan di layar kecil — cukup teks + tech stack. */}
             <div
               className="relative mx-auto hidden w-full max-w-md md:block"
               data-hero="card"

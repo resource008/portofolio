@@ -66,13 +66,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
   return payload as T;
 }
 
-/** GET a documented `{ success, data }` envelope and return `data`. */
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await apiRequest<ApiResponse<T>>(path, { method: "GET" });
   return res.data;
 }
 
-/** POST/PUT/PATCH/DELETE a documented `{ success, data }` envelope and return `data`. */
 export async function apiSend<T>(
   method: "POST" | "PUT" | "PATCH" | "DELETE",
   path: string,
@@ -82,7 +80,6 @@ export async function apiSend<T>(
   return res.data;
 }
 
-/** Upload a file (multipart/form-data) and return the documented `data`. */
 export async function apiUpload<T>(path: string, file: File, field = "file"): Promise<T> {
   const formData = new FormData();
   formData.append(field, file);

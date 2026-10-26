@@ -3,10 +3,7 @@ const SI = "https://cdn.simpleicons.org/";
 const favicon = (domain: string) =>
   `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
-/**
- * Map of brand keywords (normalized: lowercase, alphanumeric only) to a logo URL.
- * Specific brands are listed first so they win over more generic keywords.
- */
+/** Specific brands are listed first so they win over more generic keywords. */
 const CERT_MAP: Record<string, string> = {
   amazonwebservices: `${GIL}aws.svg`,
   googlecloud: `${GIL}google-cloud.svg`,
@@ -58,7 +55,6 @@ const CERT_MAP: Record<string, string> = {
   figma: `${GIL}figma.svg`,
 };
 
-/** Resolve a certificate title (e.g. "AWS Certified…") to a brand logo URL. */
 export function resolveCertLogo(name: string | null | undefined): string | null {
   const source = (name ?? "").trim().toLowerCase();
   if (!source) return null;
@@ -71,7 +67,6 @@ export function resolveCertLogo(name: string | null | undefined): string | null 
   return null;
 }
 
-/** Selectable issuing organizations for certifications. */
 export const CERT_ORGANIZATIONS: string[] = [
   "Amazon Web Services",
   "Google Cloud",

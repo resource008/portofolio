@@ -9,13 +9,8 @@ import { requireAdmin } from "../middleware/auth";
 
 export const inboxRoutes = new Hono();
 
-/** Panjang cuplikan pesan singkat yang ditampilkan di daftar inbox. */
 const LIST_EXCERPT_LENGTH = 120;
 
-/**
- * Membuat cuplikan pesan singkat untuk daftar inbox.
- * Teks utuh tetap tersedia lewat endpoint detail (`GET /admin/inbox/:id`).
- */
 function excerpt(message: string, max = LIST_EXCERPT_LENGTH): string {
   const compact = message.trim().replace(/\s+/g, " ");
   if (compact.length <= max) return compact;
@@ -97,8 +92,6 @@ inboxRoutes.get("/admin/inbox", requireAdmin, async (c) => {
     ORDER BY created_at DESC
     LIMIT 200
   `;
-  // Daftar hanya mengirim cuplikan pesan singkat agar ringan;
-  // isi pesan utuh diambil lewat endpoint detail saat dibuka.
   return ok(c, rows.map((row) => ({ ...row, message: excerpt(row.message) })));
 });
 
@@ -113,7 +106,6 @@ inboxRoutes.get("/admin/inbox/unread-count", requireAdmin, async (c) => {
   return ok(c, { count: await getInboxUnreadCount() });
 });
 
-// Realtime unread count for the sidebar badge via Server-Sent Events.
 inboxRoutes.get("/admin/inbox/stream", requireAdmin, async (c) => {
   return streamSSE(c, async (stream) => {
     let last: number | null = null;

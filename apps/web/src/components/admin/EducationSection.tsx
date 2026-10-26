@@ -143,7 +143,6 @@ export default function EducationSection({
   const [baseline, setBaseline] = useState<EducationForm | null>(null);
   const [open, setOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Education | null>(null);
-  // Id card pendidikan yang dropdown sertifikatnya sedang terbuka.
   const [expandedIds, setExpandedIds] = useState<Education["id"][]>([]);
   const toggleExpanded = (id: Education["id"]) =>
     setExpandedIds((prev) =>
@@ -160,9 +159,7 @@ export default function EducationSection({
   const isLargeScreen = useMediaQuery("lg");
   const requestLeave = useRequestLeave();
 
-  // Target portal untuk bar aksi Batal/Simpan: ditempel langsung ke scroll
-  // container (SidebarInset) supaya sticky bottom benar-benar menempel di
-  // dasar layar saat form tambah/edit terbuka — tidak menggantung di tengah.
+  // Portal ke scroll container agar sticky bottom menempel di dasar layar.
   const [actionBarHost, setActionBarHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setActionBarHost(document.querySelector<HTMLElement>("[data-transition-frame]"));
@@ -195,8 +192,7 @@ export default function EducationSection({
         : apiSend<{ id: number }>("POST", "/admin/educations", payload);
     },
     onSuccess: (saved, form) => {
-      // Form tetap terbuka setelah simpan; item baru mendapat id-nya supaya
-      // simpan berikutnya memperbarui item yang sama.
+      // Item baru mendapat id agar simpan berikutnya memperbarui item yang sama.
       const next = { ...form, id: form.id ?? saved.id };
       setEditing(next);
       setBaseline(next);
@@ -248,8 +244,6 @@ export default function EducationSection({
   useUnsavedChangesGuard({
     isDirty,
     onSave: () => (editing ? saveMutation.mutateAsync(editing) : Promise.resolve()),
-    // Keluar dengan perubahan belum disimpan → otomatis disimpan sebagai draf,
-    // tanpa dialog konfirmasi "Simpan / Batal".
     autoSaveOnLeave: true,
   });
 
@@ -260,15 +254,11 @@ export default function EducationSection({
     setBaseline(null);
   }
 
-  // Beri tahu topbar breadcrumb bahwa form tambah/edit sedang dibuka, supaya
-  // breadcrumb menampilkan "Tambah/Edit Pendidikan" dan bisa kembali ke daftar.
   useEffect(() => {
     setEducationEditorMode(editing ? (editing.id ? "edit" : "create") : null);
     return () => setEducationEditorMode(null);
   }, [editing]);
 
-  // Hook untuk breadcrumb: klik "Pendidikan" di breadcrumb menutup form dan
-  // kembali ke daftar (lewat guard perubahan belum disimpan).
   const requestLeaveRef = useRef(requestLeave);
   requestLeaveRef.current = requestLeave;
   useEffect(() => {
@@ -283,8 +273,6 @@ export default function EducationSection({
     return () => registerEducationEditorReset(null);
   }, []);
 
-  // Sinkronkan antara mode drawer (bukan large screen) dan mode inline
-  // (large screen) bila ukuran layar berubah di tengah proses tambah/edit.
   useEffect(() => {
     if (isLargeScreen && open) {
       setOpen(false);
@@ -305,9 +293,6 @@ export default function EducationSection({
           saveError={saveMutation.error}
           setEditing={setEditing}
         />
-        {/* Bar aksi Batal/Simpan — di-portal langsung ke scroll container
-            (SidebarInset) agar menempel di dasar layar sebagai sticky bottom
-            action bar, bukan menggantung di tengah form. */}
         {actionBarHost &&
           createPortal(
             <div className="sticky bottom-0 z-30 shrink-0 border-t bg-background/95 px-4 py-3 backdrop-blur lg:px-6">
@@ -352,7 +337,6 @@ export default function EducationSection({
           </div>
         </Card>
       ) : items.length === 0 ? (
-        // Empty state tanpa background — logo + judul langsung di tengah.
         <Empty>
           <EmptyHeader>
             <EmptyMedia>
@@ -387,16 +371,12 @@ export default function EducationSection({
                   }
                   enabled={isMobile}
                 >
-                {/* Card berbentuk dropdown: klik info pendidikan untuk
-                    menampilkan sertifikat langsung di dalam card ini. */}
                 <Accordion
                   onValueChange={() => toggleExpanded(item.id)}
                   value={expandedIds.includes(item.id) ? ["open"] : []}
                 >
                 <AccordionItem className="border-b-0" value="open">
                 <div className="flex items-center gap-2 p-3">
-                  {/* Indikator bawaan disembunyikan; chevron dipasang di ujung
-                      kanan setelah tombol Edit & Hapus. */}
                   <div className="min-w-0 flex-1">
                   <AccordionTrigger
                     className="min-w-0 items-center gap-3 py-0 font-normal disabled:opacity-100"
@@ -565,7 +545,6 @@ export default function EducationSection({
           ))}
         </div>
       )}
-      {/* FAB — tombol tambah melayang di pojok kanan bawah. */}
       <Button
         aria-label={t("Tambah pendidikan")}
         className="fixed right-6 bottom-6 z-40 size-16 sm:size-16 rounded-full shadow-lg before:rounded-full"
@@ -699,9 +678,6 @@ export default function EducationSection({
 
 type EducationSetter = Dispatch<SetStateAction<EducationForm | null>>;
 
-/** Form tambah/edit pendidikan untuk large screen: dua section berdampingan —
-    kiri: Form Pendidikan, kanan: Sertifikasi (kolom yang bisa discroll).
-    Bar aksi Batal/Simpan di-render oleh parent via portal ke scroll container. */
 function InlineEducationForm({
   description,
   editing,
@@ -725,11 +701,6 @@ function InlineEducationForm({
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
 
-      {/* Grid memenuhi tinggi yang tersedia. Kolom kiri (form pendidikan) tetap
-          tinggi penuh; kolom kanan (Sertifikasi & Pencapaian) tinggi mengikuti
-          isi (self-start) tetapi dibatasi maksimal 55% dari area yang tersedia
-          (max-h-[55%]) — saat sertifikatnya banyak, kolom discroll internal
-          sehingga tetap pendek dan tidak melebihi layar. */}
       <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,3fr)_minmax(0,2fr)] grid-rows-[minmax(0,1fr)] items-stretch gap-4">
         <form
           className="flex min-h-0 flex-col gap-4 overflow-y-auto"
@@ -761,10 +732,6 @@ function InlineEducationForm({
   );
 }
 
-/** Kolom kiri: field-form pendidikan (instansi).
-    Di mobile textarea Deskripsi dibatasi tingginya (max-h-20).
-    Mode "fill" (large screen): textarea Deskripsi dimulai pendek
-    (min-h-24) dan bertambah tinggi mengikuti isi teks. */
 function InstansiFields({
   editing,
   setEditing,
@@ -872,7 +839,6 @@ function InstansiFields({
   );
 }
 
-/** Kolom kanan: editor sertifikasi & pencapaian milik pendidikan yang sedang diform. */
 function SertifikasiEditor({
   editing,
   setEditing,
@@ -954,8 +920,6 @@ function SertifikasiEditor({
                 key={index}
               >
                 <div className="space-y-3 rounded-md border p-3">
-                  {/* Di layar besar, field-field dipasang 2 kolom agar setiap
-                      kartu sertifikat lebih pendek & kolom tidak panjang. */}
                   <div className="grid gap-3 lg:grid-cols-2 lg:gap-2">
                     <Field>
                       <FieldLabel>{t("Organisasi")}</FieldLabel>
@@ -973,8 +937,6 @@ function SertifikasiEditor({
                     </Field>
                     <Field>
                       <FieldLabel>{t("Periode")}</FieldLabel>
-                      {/* Pilih bulan & tahun (satu tanggal terbit sertifikat),
-                          ditampilkan di bawah label Periode. */}
                       <MonthYearPicker
                         onChange={(value) => updateAchievement(index, { period: value })}
                         value={achievement.period}
@@ -1011,7 +973,6 @@ function SertifikasiEditor({
   );
 }
 
-/** Certificate icon: brand logo by organization, else favicon from the URL domain. */
 function certificateIcon(
   organization: string | null | undefined,
   url: string | null | undefined,
@@ -1133,13 +1094,6 @@ function OrgSelect({ value, onChange }: { value: string; onChange: (value: strin
   );
 }
 
-/**
- * Satu field "Dokumen" — URL kredensial & file sertifikat digabung jadi satu.
- * Saat diklik membuka window berisi daftar dokumen dengan aksi menambah
- * "Tautan" (URL) atau "Unggah file" (memilih file yang sudah diunggah).
- * Di layar besar tampil sebagai Dialog, di mobile sebagai bottom sheet
- * (nested drawer bila dibuka dari dalam drawer form).
- */
 function DocumentsField({
   value,
   onChange,
@@ -1150,8 +1104,6 @@ function DocumentsField({
   scope?: string;
 }) {
   const [open, setOpen] = useState(false);
-  // Index dokumen yang sedang diganti lewat MediaPicker, atau "new" untuk
-  // menambah dokumen file baru.
   const [picking, setPicking] = useState<number | "new" | null>(null);
   const isDesktop = useMediaQuery("lg");
   const { t } = useLanguage();
@@ -1205,9 +1157,6 @@ function DocumentsField({
     .map((doc, index) => ({ doc, index }))
     .filter(({ doc }) => isDocumentFile(doc));
 
-  // Satu card berisi dua menu: Tautan & Unggah file. Item milik tiap menu
-  // (input URL / file terunggah) beserta tombol hapusnya tampil langsung di
-  // bawah header menu tersebut.
   const body = (
     <div className="overflow-hidden rounded-xl border bg-card">
       <button

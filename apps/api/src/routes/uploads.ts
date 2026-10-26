@@ -36,10 +36,7 @@ const EXTENSION_BY_TYPE: Record<string, string> = {
   "video/quicktime": ".mov",
 };
 
-/**
- * Whether the file content starts with the signature of its declared MIME
- * type. The browser-supplied `file.type` alone can be spoofed.
- */
+/** The browser-supplied `file.type` can be spoofed, so check the magic bytes. */
 function matchesSignature(type: string, head: Uint8Array): boolean {
   const ascii = (start: number, text: string) =>
     [...text].every((char, i) => head[start + i] === char.charCodeAt(0));
@@ -69,7 +66,6 @@ function matchesSignature(type: string, head: Uint8Array): boolean {
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
 
-/** Normalize a scope/feature key into a safe folder name. */
 function sanitizeScope(value: string | undefined): string {
   return (value ?? "").trim().toLowerCase().replace(/[^a-z0-9-]/g, "");
 }
@@ -82,7 +78,6 @@ interface UploadedFile {
   in_use: boolean;
 }
 
-/** Uploaded-file URLs that are still referenced by any content table. */
 async function getInUseChecker(): Promise<(url: string) => boolean> {
   const rows = await sql<{ url: string }[]>`
     SELECT url FROM (

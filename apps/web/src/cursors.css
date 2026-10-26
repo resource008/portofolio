@@ -1,21 +1,10 @@
-/*
- * Kursor custom (gaya macOS) untuk seluruh web — public maupun panel admin.
- * Diimpor global di main.tsx.
- *
- * Sengaja tidak di dalam @layer: CSS tanpa layer menang atas utilitas
- * Tailwind (cursor-pointer, cursor-grab, …), sehingga semua elemen konsisten
- * memakai set kursor ini.
- *
- * SVG 48×48 (ikon 32×32 diperbesar 1,5×); angka = titik klik.
- */
+/* Sengaja di luar @layer agar menang atas utilitas cursor Tailwind. */
 html,
 html * {
   cursor: url("./assets/cursors/default.svg") 15 12, default;
 }
 
-/* Elemen yang bisa diklik → tangan menunjuk. Memakai :where() (spesifisitas 0)
-   agar aturan di bawahnya (grab, move, teks, nonaktif) tetap menang, mis. foto
-   folder yang berupa <button> tapi bisa ditarik. */
+/* :where() (spesifisitas 0) agar aturan di bawahnya (grab, move, teks, nonaktif) tetap menang. */
 html :where(
     a[href],
     button:not(:disabled),
@@ -48,7 +37,6 @@ html :where(
   cursor: url("./assets/cursors/handpointing.svg") 20 12, pointer;
 }
 
-/* Kolom teks → kursor teks. */
 html :is(
     input:not([type="checkbox"], [type="radio"], [type="range"], [type="button"], [type="submit"], [type="file"], [type="color"]),
     textarea,
@@ -58,7 +46,6 @@ html :is(
   cursor: url("./assets/cursors/textcursor.svg") 24 24, text;
 }
 
-/* Bisa digeser (carousel, foto folder) → tangan terbuka; saat ditahan → menggenggam. */
 html :is(.cursor-grab, .cursor-grab *) {
   cursor: url("./assets/cursors/handopen.svg") 24 24, grab;
 }
@@ -67,12 +54,10 @@ html :is(.cursor-grabbing, .cursor-grabbing *, .cursor-grab:active, .cursor-grab
   cursor: url("./assets/cursors/handgrabbing.svg") 24 24, grabbing;
 }
 
-/* Geser/ubah ukuran (termasuk rail sidebar cursor-w/e-resize) → kursor move. */
 html :is(.cursor-move, .cursor-move *, [data-slot="sidebar-rail"]) {
   cursor: url("./assets/cursors/move.svg") 24 24, move;
 }
 
-/* Elemen nonaktif kembali ke panah biasa. */
 html :is(:disabled, [aria-disabled="true"], [data-disabled], .cursor-not-allowed) {
   cursor: url("./assets/cursors/default.svg") 15 12, not-allowed;
 }

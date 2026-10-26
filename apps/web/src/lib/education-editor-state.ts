@@ -26,7 +26,6 @@ function getMode(): EducationEditorMode {
   return currentMode;
 }
 
-/** Snapshot used during SSR / hydration where the editor is never open. */
 function getServerMode(): EducationEditorMode {
   return null;
 }
@@ -37,10 +36,6 @@ export function useEducationEditorMode(): EducationEditorMode {
 
 let resetEducationEditor: (() => void) | null = null;
 
-/**
- * Register a handler that exits the education editor (used by the topbar
- * breadcrumb link so it returns to the education list).
- */
 export function registerEducationEditorReset(handler: (() => void) | null): void {
   resetEducationEditor = handler;
 }

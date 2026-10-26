@@ -1,5 +1,3 @@
-// Shared API response/domain types.
-
 export interface ApiResponse<T> {
   success: boolean;
   message?: string;
@@ -13,7 +11,6 @@ export interface PaginationMeta {
   per_page: number;
   total: number;
   unread_count?: number;
-  /** Projects listing: whether keyword search is enabled. */
   search_enabled?: boolean;
 }
 
@@ -33,9 +30,7 @@ export interface ErrorResponse {
 const MB = 1024 * 1024;
 
 export const UPLOAD_LIMITS = {
-  /** Images and documents (PNG, JPG, WEBP, GIF, PDF). */
   file: 5 * MB,
-  /** Videos (MP4, WEBM, MOV). */
   video: 50 * MB,
 } as const;
 
@@ -50,25 +45,18 @@ export const ALLOWED_UPLOAD_TYPES = [
   "video/quicktime",
 ] as const;
 
-/** The maximum size allowed for a MIME type. */
 export function maxUploadSize(mime: string): number {
   return mime.startsWith("video/") ? UPLOAD_LIMITS.video : UPLOAD_LIMITS.file;
 }
 
-/** Human-readable size, e.g. `5 MB`. */
 export function formatUploadSize(bytes: number): string {
   return `${bytes / MB} MB`;
 }
 
-/** The upload rejection message for a MIME type. */
 export function uploadSizeMessage(mime: string): string {
   return `Ukuran file maksimal ${formatUploadSize(maxUploadSize(mime))}.`;
 }
 
-/**
- * Validate a file before uploading so oversized and unsupported files are
- * rejected client-side instead of after a full upload.
- */
 export function validateUpload(
   file: { size: number; type: string },
 ): { ok: true } | { ok: false; message: string } {

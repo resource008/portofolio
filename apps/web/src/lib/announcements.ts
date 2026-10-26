@@ -6,9 +6,7 @@ export interface AnnouncementMeta {
   value: AnnouncementType;
   label: string;
   icon: React.ComponentType<React.ComponentProps<"svg">>;
-  /** Text/icon color on a neutral background. */
   accent: string;
-  /** Banner container (background + border + text). */
   banner: string;
 }
 
@@ -40,7 +38,6 @@ export function announcementMeta(type: AnnouncementType): AnnouncementMeta {
   return ANNOUNCEMENT_TYPES.find((item) => item.value === type) ?? ANNOUNCEMENT_TYPES[0];
 }
 
-/** Types available for the free-text ("general") announcement kind. */
 export const GENERAL_ANNOUNCEMENT_TYPES: AnnouncementMeta[] = ANNOUNCEMENT_TYPES.filter(
   (item) => item.value !== "new_post",
 );

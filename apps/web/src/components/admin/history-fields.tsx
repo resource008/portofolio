@@ -45,7 +45,6 @@ const MONTHS = [
 const MIN_YEAR = 1970;
 const MAX_YEAR = new Date().getFullYear() + 20;
 
-/** Baca bulan (nama penuh atau singkatan) & tahun dari teks periode. */
 function parseMonthYear(text: string): { month: string; year: string } {
   const value = text.trim();
   const yearMatch = value.match(/\d{4}/);
@@ -58,7 +57,6 @@ function parseMonthYear(text: string): { month: string; year: string } {
   return { month, year: yearMatch ? yearMatch[0] : "" };
 }
 
-/** Susun teks periode dengan bulan singkatan, mis. "Sep 2024". */
 function composeMonthYear(month: string, year: string): string {
   const abbr = month
     ? (MONTHS.find((item) => item.value === month)?.abbr ?? month)
@@ -70,12 +68,6 @@ function composeMonthYear(month: string, year: string): string {
 const pickerNavButtonClassName =
   "grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-40 [&_svg:not([class*='size-'])]:size-4 [&_svg]:pointer-events-none [&_svg]:shrink-0";
 
-/**
- * Picker bulan & tahun. Di layar besar (lg ke atas) tampil sebagai window
- * (Dialog) yang fokus; di mobile tampil sebagai bottom sheet (Drawer).
- * Saat dipakai di dalam drawer lain (form Education/Experience), di mobile
- * drawer ini menjadi nested drawer dan otomatis ditumpuk oleh DrawerContext.
- */
 export function MonthYearPicker({
   value,
   onChange,
@@ -92,7 +84,6 @@ export function MonthYearPicker({
   const [view, setView] = useState<"month" | "year">("month");
   const [viewYear, setViewYear] = useState(() => new Date().getFullYear());
   const { month, year } = parseMonthYear(value);
-  // Desktop (lg+) → Dialog (window); mobile → Drawer (bottom sheet).
   const isDesktop = useMediaQuery("lg");
 
   function handleOpenChange(next: boolean) {
@@ -112,11 +103,9 @@ export function MonthYearPicker({
   }
 
   function clear() {
-    // Tetap terbuka agar pengguna bisa langsung memilih bulan/tahun lagi.
     onChange("");
   }
 
-  // Blok 12 tahun yang ditampilkan pada tampilan daftar tahun.
   const yearStart = Math.floor((viewYear - 1) / 12) * 12 + 1;
   const yearRange = Array.from({ length: 12 }, (_, i) => yearStart + i);
 
@@ -306,7 +295,6 @@ export function MonthYearRange({
   value: string;
   onChange: (value: string) => void;
   hideEnd?: boolean;
-  /** Label pengganti picker akhir saat `hideEnd` (mis. "Now"), ditampilkan pasif. */
   endLabel?: string;
 }) {
   const [sides, setSides] = useState<[string, string]>(() => {

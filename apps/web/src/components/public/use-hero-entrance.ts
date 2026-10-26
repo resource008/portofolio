@@ -6,28 +6,12 @@ import { getMotionEnabled } from "@/lib/motion";
 
 gsap.registerPlugin(SplitText);
 
-/**
- * Entrance hero Beranda — satu timeline GSAP, diputar sekali per kunjungan.
- *
- * Tiap elemen punya gerak yang sesuai sifatnya (bukan fade-up seragam):
- * - Nama: kata per kata naik dari balik mask baris, seperti teks dicetak.
- * - Heading kecil: geser masuk dari mask, mendahului nama.
- * - Chip role: "diletakkan" dari atas dengan sedikit miring lalu lurus.
- * - Deskripsi: per baris, opacity + geser pendek, mengekor nama.
- * - Kartu profil: fade saja (tanpa gerak), agar tidak bersaing dengan teks.
- * - Badge "Tech Stack": dicap (rotasi 0 → -6°) dengan pantulan kecil.
- * - Isyarat scroll: muncul paling akhir.
- *
- * Elemen ditandai `data-hero="…"` di dalam `scope`. Bila motion dimatikan
- * (pengaturan situs atau prefers-reduced-motion), konten langsung tampil.
- */
 export function useHeroEntrance(
   scope: RefObject<HTMLElement | null>,
   ready: boolean,
 ) {
   useLayoutEffect(() => {
     const root = scope.current;
-    // `ready` hanya berubah sekali (data profil termuat), jadi timeline diputar sekali.
     if (!root || !ready) return;
 
     const reduced = window.matchMedia(
@@ -41,11 +25,9 @@ export function useHeroEntrance(
     const ctx = gsap.context(() => {
       const q = gsap.utils.selector(root);
       const splits: SplitText[] = [];
-      // Setelah selesai, kembalikan DOM teks ke bentuk aslinya agar React tetap
-      // memegang node-nya (mis. saat teks profil diperbarui).
+      // Kembalikan DOM teks ke bentuk asli agar React tetap memegang node-nya.
       const tl = gsap.timeline({
         defaults: { ease: "expo.out", duration: 1.1 },
-        // Mulai setelah header & announcement (lihat ENTRANCE).
         delay: ENTRANCE.content,
         onComplete: () => {
           splits.forEach((split) => split.revert());
@@ -53,7 +35,6 @@ export function useHeroEntrance(
         },
       });
 
-      // Semua target tampil (visibility) — posisi awalnya diatur oleh .from() di bawah.
       gsap.set(q("[data-hero]"), { autoAlpha: 1 });
 
       const [heading] = q("[data-hero='heading']");
@@ -124,8 +105,7 @@ export function useHeroEntrance(
           stamp,
           {
             scale: 1.6,
-            // Kelas -rotate-6 memakai properti CSS `rotate`; mulai dari +6° (transform)
-            // sehingga badge tampak lurus lalu "dicap" miring ke -6°.
+            // Kelas -rotate-6 memakai properti CSS `rotate`, jadi mulai dari +6° lewat transform.
             rotate: 6,
             autoAlpha: 0,
             ease: "back.out(3)",

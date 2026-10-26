@@ -7,8 +7,7 @@ import { isStorageConfigured, listObjects } from "../lib/storage";
 
 export const dashboardRoutes = new Hono();
 
-// Batas penyimpanan mengikuti limit plan Vercel Blob (default: 10 GB = 10240 MB).
-// Sesuaikan via env STORAGE_LIMIT_MB bila plan kamu berbeda (mis. Pro = 20480).
+// Default mengikuti limit plan Vercel Blob (10 GB); ubah via env STORAGE_LIMIT_MB.
 const STORAGE_LIMIT_MB = Number(process.env.STORAGE_LIMIT_MB || 10240);
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".webp", ".gif"]);
@@ -27,7 +26,6 @@ interface StorageBreakdown {
   storage_limit_mb: number;
 }
 
-/** Rincian pemakaian blob store per jenis file (gambar, video, dokumen). */
 async function getStorageBreakdown(): Promise<StorageBreakdown> {
   const empty = (): StorageTypeStats => ({ count: 0, size_mb: 0 });
   const breakdown: StorageBreakdown = {
@@ -65,7 +63,6 @@ async function getStorageBreakdown(): Promise<StorageBreakdown> {
     breakdown.documents.size_mb = Math.round(breakdown.documents.size_mb * 100) / 100;
     breakdown.storage_used_mb = Math.round((totalBytes / (1024 * 1024)) * 100) / 100;
   } catch {
-    // Blob store gagal dibaca — biarkan semua bernilai nol.
   }
 
   return breakdown;

@@ -12,11 +12,9 @@ interface FileUploadSplitProps {
   hint?: string;
   scope?: string;
   label?: string;
-  /** Tampilan ringkas: thumbnail + nama file + tombol aksi ringkas. */
   compact?: boolean;
 }
 
-/** ArrowUpTrayIcon file: baris info file + tombol "Pilih File" yang membuka dialog media. */
 export default function FileUploadSplit({
   value,
   onChange,

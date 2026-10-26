@@ -11,10 +11,6 @@ export interface AdminUser {
   username?: string | null;
 }
 
-/**
- * Protects `/api/admin/*` routes: requires a valid Better Auth session
- * (cookie or Bearer token) whose GitHub username is in the allowlist.
- */
 export const requireAdmin = createMiddleware<{
   Variables: { admin: AdminUser };
 }>(async (c, next) => {

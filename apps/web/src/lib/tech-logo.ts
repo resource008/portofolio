@@ -248,7 +248,6 @@ export const TECH_OPTIONS: string[] = [
   "Streamlit",
 ];
 
-/** Resolve a tech name (e.g. "React") to a devicon logo URL. */
 export function resolveTechLogo(name: string | null | undefined): string | null {
   const trimmed = (name ?? "").trim();
   if (!trimmed) return null;

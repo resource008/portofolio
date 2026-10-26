@@ -215,7 +215,6 @@ function MediaRow({
   );
 }
 
-/** Donat chart berwarna; rincian (jumlah & ukuran) tampil saat hover. */
 function StorageDonut({
   segments,
 }: {
@@ -238,7 +237,6 @@ function StorageDonut({
   const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
   const total = segments.reduce((sum, seg) => sum + seg.value, 0);
 
-  // Sudut donat: 0 = posisi 12 jam, searah jarum jam.
   const polar = (r: number, angle: number) => ({
     x: CENTER + r * Math.sin(angle),
     y: CENTER - r * Math.cos(angle),
@@ -268,7 +266,6 @@ function StorageDonut({
         viewBox={`0 0 ${SIZE} ${SIZE}`}
         width={SIZE}
       >
-        {/* Ring dasar */}
         <circle
           className="stroke-muted/40"
           cx={CENTER}
@@ -278,7 +275,6 @@ function StorageDonut({
           strokeWidth={STROKE}
         />
 
-        {/* Total terpakai di tengah */}
         <text
           className="fill-foreground"
           fontSize={20}
@@ -299,7 +295,6 @@ function StorageDonut({
           {t("Terpakai")}
         </text>
 
-        {/* Segmen donat, mulai dari atas (12 jam) */}
         {visibleArcs.length > 0 && (
           <g transform={`rotate(-90 ${CENTER} ${CENTER})`}>
             {visibleArcs.map((arc) => {
@@ -332,7 +327,6 @@ function StorageDonut({
         )}
       </svg>
 
-      {/* Tooltip saat hover */}
       {hovered && tip && (
         <div
           className="pointer-events-none absolute z-10 w-max max-w-44 -translate-x-1/2 -translate-y-1/2 rounded-md border bg-popover px-3 py-1.5 text-xs shadow-md"

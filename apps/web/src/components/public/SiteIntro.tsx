@@ -5,12 +5,9 @@ import type { HeroProfile } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
 import { markIntroDone } from "@/lib/intro";
 
-/** Batas tunggu data profil (ms); lewat dari ini air tetap dipenuhkan. */
 const MAX_WAIT = 3500;
-/** Selagi data dimuat, air naik pelan sampai level ini lalu menunggu. */
 const LOADING_LEVEL = 82;
 
-/** Permukaan air: dua periode gelombang dalam lebar 200%, digeser -50% agar mulus. */
 function Wave({ className }: { className: string }) {
   return (
     <svg aria-hidden className={className} preserveAspectRatio="none" viewBox="0 0 2400 40">
@@ -22,13 +19,6 @@ function Wave({ className }: { className: string }) {
   );
 }
 
-/**
- * Loading page web public (dipasang di PublicLayout), tampil di setiap
- * pemuatan halaman sebelum konten terlihat: air naik mengisi layar dari 0% sampai 100%. Level air mengikuti
- * pemuatan data profil — naik pelan sampai ~82% selagi menunggu, lalu penuh
- * begitu data siap. Setelah penuh, layar air terangkat dan `markIntroDone()`
- * memicu entrance header, announcement, lalu konten.
- */
 export function SiteIntro() {
   const [finished, setFinished] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -46,7 +36,6 @@ export function SiteIntro() {
   // Satu pemicu boolean supaya data yang datang setelah timeout tidak memutar ulang.
   const go = Boolean(profile) || isError || timedOut;
 
-  /** Terapkan level air (0–100) ke lapisan air, permukaan gelombang & angka. */
   const render = () => {
     const value = level.current.value;
     const top = 100 - value;
@@ -56,7 +45,6 @@ export function SiteIntro() {
     for (const node of countRefs.current) if (node) node.textContent = text;
   };
 
-  // Fase 1: kunci scroll, air naik pelan selagi data dimuat.
   useLayoutEffect(() => {
     const html = document.documentElement;
     const prevOverflow = html.style.overflow;
@@ -77,7 +65,6 @@ export function SiteIntro() {
     };
   }, []);
 
-  // Fase 2: data siap → penuhkan air, lalu angkat layar dan mulai entrance.
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root || !go) return;
@@ -93,15 +80,12 @@ export function SiteIntro() {
 
     tl.to(level.current, {
       value: 100,
-      // Langsung lanjut naik dari level saat ini (tanpa jeda). Total pengisian
-      // minimal ~2 detik supaya air terasa mengisi, bukan berkedip.
       duration: Math.max(1, 2 - elapsed),
       ease: "power2.inOut",
       onUpdate: render,
     })
       .to(countRefs.current, { yPercent: -40, autoAlpha: 0, duration: 0.35, ease: "power2.in" }, "+=0.15")
       .to(root, { yPercent: -100, duration: 0.95, ease: "expo.inOut" }, "-=0.1")
-      // Entrance dimulai saat layar sudah setengah terangkat — keduanya bertumpuk.
       .call(markIntroDone, [], "-=0.7");
 
     return () => {
@@ -119,7 +103,6 @@ export function SiteIntro() {
       className="fixed inset-0 z-[100] overflow-hidden bg-[#FFF4F4] dark:bg-neutral-950"
       ref={rootRef}
     >
-      {/* Angka di atas latar (sebelum terendam air). */}
       <div className="absolute inset-0 grid place-items-center text-neutral-900 dark:text-neutral-100">
         <span
           className={counter}
@@ -131,8 +114,6 @@ export function SiteIntro() {
         </span>
       </div>
 
-      {/* Lapisan air: dipotong dari atas sesuai level; angka di dalamnya berwarna
-          terang sehingga tampak "terendam" saat permukaan air melewatinya. */}
       <div
         className="absolute inset-0 grid place-items-center bg-sky-600 text-white dark:bg-sky-500"
         ref={waterRef}
@@ -148,7 +129,6 @@ export function SiteIntro() {
         </span>
       </div>
 
-      {/* Permukaan air: dua gelombang dengan kecepatan berbeda agar terasa hidup. */}
       <div className="absolute inset-x-0 h-0" ref={surfaceRef} style={{ top: "100%" }}>
         <Wave className="absolute -bottom-px left-0 h-5 w-[200%] animate-wave-slow text-sky-600/45 sm:h-7 dark:text-sky-500/45" />
         <Wave className="absolute -bottom-px left-0 h-3.5 w-[200%] animate-wave text-sky-600 sm:h-5 dark:text-sky-500" />

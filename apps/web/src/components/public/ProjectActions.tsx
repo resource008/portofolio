@@ -10,7 +10,6 @@ import { ClickSpark } from "@/components/ui/ClickSpark";
 import { Counter } from "@/components/ui/Counter";
 import { motion } from "motion/react";
 
-/** Proyek yang sedang di-like di browser ini — satu like per pengunjung, bisa dibatalkan. */
 const LIKED_KEY = "liked-projects";
 
 function readLiked(): number[] {
@@ -38,23 +37,18 @@ function track(event: "like" | "unlike" | "share", projectId: number) {
   });
 }
 
-/** Gaya kaca (glass) pill yang dipakai bersama tombol & badge di atas media cover. */
 export const glassPillClass =
   "inline-flex h-9 items-center gap-1.5 rounded-full border border-white/40 bg-white/45 px-3 font-medium text-foreground text-sm backdrop-blur-md backdrop-saturate-150 dark:border-white/15 dark:bg-black/30 dark:text-white";
 
 const buttonClass =
   `${glassPillClass} transition-colors hover:bg-white/60 dark:hover:bg-black/45`;
 
-/** Tombol Like (dengan jumlah) & Share bergaya kaca (glass) yang mengambang di atas media cover. */
 export function ProjectActions({ project, className }: { project: ProjectDetail; className?: string }) {
   const queryClient = useQueryClient();
   const [liked, setLiked] = useState(() => readLiked().includes(project.id));
   const [likes, setLikes] = useState(project.likes_count);
-  // Penghitung klik share, dipakai sebagai key agar animasi ikon diputar ulang.
   const [shareTaps, setShareTaps] = useState(0);
 
-  // Klik pertama menyukai, klik berikutnya membatalkan (unlike). Tampilan
-  // diperbarui lebih dulu, lalu dikembalikan jika permintaan gagal.
   const toggleLike = async () => {
     const next = !liked;
     const delta = next ? 1 : -1;

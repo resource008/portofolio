@@ -1,27 +1,17 @@
-/**
- * Sanitasi HTML dari editor konten proyek sebelum dirender dengan
- * `dangerouslySetInnerHTML`. Memakai allowlist: hanya tag format teks yang
- * dihasilkan editor yang dipertahankan, semua atribut dibuang kecuali `href`
- * yang aman pada tautan.
- */
+/** Sanitasi HTML editor sebelum `dangerouslySetInnerHTML`: allowlist tag, semua atribut dibuang kecuali `href` aman. */
 
 const ALLOWED_TAGS = new Set([
   "A", "B", "BR", "DIV", "EM", "H1", "H2", "H3", "I", "LI", "OL", "P", "S",
   "SPAN", "STRIKE", "STRONG", "U", "UL",
 ]);
 
-/** Tag yang isinya ikut dibuang (bukan sekadar dibuka bungkusnya). */
 const DROP_WITH_CONTENT = new Set([
   "SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "TEMPLATE", "NOSCRIPT", "SVG", "MATH",
 ]);
 
 const SAFE_SCHEMES = new Set(["http", "https", "mailto", "tel"]);
 
-/**
- * Kembalikan URL bila aman dipakai sebagai `href`, selain itu `undefined`.
- * Menolak skema berbahaya seperti `javascript:` dan `data:`, termasuk yang
- * disamarkan dengan spasi/karakter kontrol (`java\tscript:`).
- */
+/** Tolak skema berbahaya (`javascript:`, `data:`), termasuk yang disamarkan spasi/karakter kontrol. */
 export function safeHref(url: string | null | undefined): string | undefined {
   const value = (url ?? "").trim();
   if (!value) return undefined;
@@ -51,7 +41,6 @@ function cleanNode(node: Node): void {
     cleanNode(el);
 
     if (!ALLOWED_TAGS.has(tag)) {
-      // Buka bungkus tag yang tidak dikenal, pertahankan teksnya.
       el.replaceWith(...Array.from(el.childNodes));
       continue;
     }

@@ -6,18 +6,8 @@ import { getMotionEnabled } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/**
- * Entrance konten saat di-scroll ke viewport, sekali saja. Target ditandai
- * `data-reveal` di dalam `scope`:
- * - `img`   : ilustrasi "melompat" masuk (skala + sedikit miring, memantul).
- * - `title` : judul tersingkap dari bawah lewat clip-path.
- * - `text`  : paragraf naik pendek sambil muncul, mengekor judul.
- * Tidak memecah teks (tanpa SplitText) agar aman bila isi teks berubah
- * setelah data termuat. Menunggu intro situs selesai.
- */
 export function useRevealOnScroll(
   scope: RefObject<HTMLElement | null>,
-  /** Jeda sebelum mulai — untuk konten di atas lipatan agar menunggu header. */
   delay = 0,
 ) {
   const introDone = useIntroDone();

@@ -106,9 +106,7 @@ export default function ContentPage() {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<ContentForm>(EMPTY);
 
-  // Target portal untuk bar aksi Simpan: ditempel langsung ke scroll container
-  // (SidebarInset) supaya sticky bottom benar-benar menempel di dasar layar —
-  // tombol tidak ikut scroll bersama konten form.
+  // Portal ke scroll container agar sticky bottom menempel di dasar layar.
   const [actionBarHost, setActionBarHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setActionBarHost(document.querySelector<HTMLElement>("[data-transition-frame]"));

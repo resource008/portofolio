@@ -11,7 +11,6 @@ import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 import medal from "@/assets/illustrations/medal.svg";
 
-/** Header kartu: logo, institusi, jurusan; periode & status sebagai meta. */
 function EducationMainBlock({ item }: { item: Education }) {
   const logo = item.logo_url ?? campusLogo(item.institution_name);
 
@@ -30,7 +29,6 @@ function EducationMainBlock({ item }: { item: Education }) {
           {item.institution_name}
         </h3>
         <p className="text-muted-foreground text-sm">{item.degree_major}</p>
-        {/* Periode sudah tampil di checkpoint timeline — di kartu cukup IPK. */}
         {item.gpa !== null ? (
           <p className="mt-2 text-muted-foreground text-xs tabular-nums">
             IPK <span className="font-medium text-foreground">{item.gpa}</span>
@@ -44,7 +42,6 @@ function EducationMainBlock({ item }: { item: Education }) {
 const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif|svg)(\?|#|$)/i;
 const PDF_EXT = /\.pdf(\?|#|$)/i;
 
-/** Pratinjau file sertifikat: gambar langsung, PDF lewat iframe, lainnya ikon. */
 function CertificatePreview({ src, title }: { src: string; title: string }) {
   if (IMAGE_EXT.test(src)) {
     return (
@@ -75,7 +72,6 @@ function CertificatePreview({ src, title }: { src: string; title: string }) {
   );
 }
 
-/** Kartu sertifikat memanjang: pratinjau file di kiri, judul + meta & tautan di kanan. */
 function AchievementRow({ achievement }: { achievement: Certificate }) {
   const documents = achievement.documents ?? [];
   const file = documents.find(isDocumentFile);
@@ -127,10 +123,6 @@ function AchievementRow({ achievement }: { achievement: Certificate }) {
   );
 }
 
-/**
- * Satu kartu pendidikan dengan border & background: header, deskripsi, dan
- * seluruh daftar pencapaian langsung ditampilkan.
- */
 function EducationCard({ item }: { item: Education }) {
   return (
     <article className="rounded-xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
@@ -144,7 +136,6 @@ function EducationCard({ item }: { item: Education }) {
 
       {item.achievements.length > 0 ? (
         <div className="mt-5">
-          {/* Kartu pencapaian memanjang: pratinjau di kiri, teks di kanan. */}
           <ul className="flex flex-col gap-3">
             {item.achievements.map((achievement) => (
               <AchievementRow achievement={achievement} key={achievement.id} />
@@ -156,11 +147,6 @@ function EducationCard({ item }: { item: Education }) {
   );
 }
 
-/**
- * Daftar kartu Education yang muncul saat discroll (GSAP). Hanya
- * di-render saat ada item — saat kosong section ini tidak dibuat sama sekali
- * sehingga tidak ada frame kosong di homepage.
- */
 function EducationTimeline({ items }: { items: Education[] }) {
   return (
     <section className="relative scroll-mt-[7rem] bg-muted/20">
@@ -194,12 +180,10 @@ export function EducationSection() {
     header?.description ||
     "Latar belakang pendidikan formal dan pencapaian sertifikasi kompetensi yang menjadi fondasi perjalanan karier di bidang teknologi.";
 
-  // Saat kosong: tampilkan hanya logo + judul di tengah, tanpa background/frame.
   const isEmpty = items.length === 0;
 
   return (
     <>
-      {/* Section 1 — Header: logo, judul, dan teks. */}
       <section
         className={cn(
           "scroll-mt-[7rem] py-16 md:py-24",
@@ -212,7 +196,6 @@ export function EducationSection() {
             ref={revealRef}
             className={cn(
               "flex flex-col gap-6",
-              // Rata kiri sejajar Hero & Kontak; saat kosong tetap di tengah.
               isEmpty ? "mx-auto max-w-2xl items-center text-center" : "items-start text-left",
             )}
           >
@@ -236,7 +219,6 @@ export function EducationSection() {
         </div>
       </section>
 
-      {/* Section 2 — Timeline kartu, hanya saat ada item. */}
       {!isEmpty ? <EducationTimeline items={items} /> : null}
     </>
   );

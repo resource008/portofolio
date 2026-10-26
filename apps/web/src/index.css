@@ -329,15 +329,12 @@
   }
 }
 
-/* Sembunyikan isyarat scroll hero pada viewport yang pendek (mis. mobile
- * landscape / tablet landscape) agar tidak menimpa konten. */
 @media (max-height: 480px) {
   .scroll-hint {
     display: none;
   }
 }
 
-/* Morph dialog animation (open & close): scale + blur + fade. */
 .morph-dialog {
   transition-property: opacity, scale, translate, filter;
   transition-duration: 400ms;
@@ -352,7 +349,6 @@
   filter: blur(8px);
 }
 
-/* Morph popup (menus, submenus, profile): scale + blur + fade from anchor origin. */
 .morph-popup {
   transform-origin: var(--transform-origin);
   transition-property: opacity, scale, translate, filter;
@@ -379,13 +375,10 @@
     transition-duration: 0.001ms;
   }
 }
-/* Elemen entrance hero disembunyikan sampai GSAP menyiapkan posisi awalnya
-   (lihat use-hero-entrance.ts) — mencegah kedipan konten sebelum animasi. */
+/* Disembunyikan sampai GSAP menyiapkan posisi awal, mencegah kedipan sebelum animasi. */
 [data-hero] {
   visibility: hidden;
 }
-/* Setelah entrance selesai (atau motion dimatikan), semua elemen hero tampil —
-   termasuk yang baru dirender belakangan. */
 [data-hero-done] [data-hero] {
   visibility: visible;
 }

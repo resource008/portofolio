@@ -1,5 +1,3 @@
-// Shared domain models (mirror of the API documentation).
-
 export interface ProfileSkill {
   id: number;
   name: string;
@@ -33,7 +31,6 @@ export interface Certificate {
   organization: string | null;
   title: string;
   period: string | null;
-  /** Daftar dokumen campuran: URL kredensial dan/atau file sertifikat. */
   documents: string[];
 }
 
@@ -96,7 +93,6 @@ export interface ProjectHeadingBlock {
   type: "heading";
   text: string;
   align?: ProjectBlockAlign | null;
-  /** Blok Heading ini dipakai sebagai judul proyek. */
   isTitle?: boolean | null;
 }
 
@@ -125,7 +121,6 @@ export interface ProjectLinkBlock {
 
 export interface ProjectTextBlock {
   type: "text";
-  /** Paragraf teks dalam bentuk HTML (mendukung Bold/Italic/daftar). */
   text: string;
   align?: ProjectBlockAlign | null;
 }
@@ -154,7 +149,6 @@ export interface Project {
   title: string;
   category: string;
   date_range: string | null;
-  /** Cover media (a single image or video). */
   media: ProjectMedia[];
   tech_stacks: string[];
   is_published: boolean;
@@ -168,7 +162,6 @@ export interface Project {
 }
 
 export interface ProjectDetail extends Project {
-  /** Ordered content blocks (heading / image / video / link). */
   content: ProjectBlock[];
 }
 
@@ -196,10 +189,7 @@ export interface ContactInboxItem {
   name: string;
   email: string;
   email_link?: string;
-  /**
-   * Isi pesan. Pada endpoint daftar (`GET /admin/inbox`) berupa cuplikan
-   * singkat; teks lengkap diambil lewat endpoint detail (`GET /admin/inbox/:id`).
-   */
+  /** Di endpoint daftar berupa cuplikan; teks lengkap lewat `GET /admin/inbox/:id`. */
   message: string;
   is_read: boolean;
   read_at: string | null;

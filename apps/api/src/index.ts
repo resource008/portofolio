@@ -44,7 +44,6 @@ app.route("/api", notificationRoutes);
 app.route("/api", techStackRoutes);
 app.route("/api", uploadRoutes);
 
-// Better Auth (cookie + bearer). Mounted under /api/auth/*.
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 await runMigrations();

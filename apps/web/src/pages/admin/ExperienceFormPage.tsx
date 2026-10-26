@@ -39,15 +39,10 @@ export default function ExperienceFormPage() {
   );
   const [preview, setPreview] = useState<{ photos: string[]; index: number } | null>(null);
 
-  // Snapshot form terakhir yang dirender — dipakai untuk mereset baseline setelah
-  // simpan sehingga guard unsaved-changes dibersihkan sebelum navigasi.
   const editingRef = useRef<ExperienceForm | null>(editing);
   editingRef.current = editing;
 
-  // Setelah item baru dibuat, form tetap terbuka: URL diganti ke halaman edit
-  // item tersebut (bukan kembali ke daftar). Dilewatkan lewat efek supaya guard
-  // sempat di-unregister oleh efek `useUnsavedChangesGuard` — jika tidak,
-  // navigasi justru diblok oleh useBlocker dan muncul dialog "belum disimpan".
+  // Navigasi lewat efek agar guard sempat di-unregister; jika tidak, useBlocker memblokirnya.
   const createdIdRef = useRef<number | null>(null);
 
   const { data, isLoading, error } = useQuery({
@@ -88,7 +83,6 @@ export default function ExperienceFormPage() {
         description: t("Data pengalaman berhasil disimpan."),
         type: "success",
       });
-      // Reset baseline supaya tidak dianggap "dirty" lagi.
       if (editingRef.current) {
         setBaseline(editingRef.current);
         setEditing(editingRef.current);
@@ -108,8 +102,6 @@ export default function ExperienceFormPage() {
     onSave: () => (editing ? saveMutation.mutateAsync(editing) : Promise.resolve()),
   });
 
-  // Item baru tersimpan → pindah ke halaman edit-nya agar simpan berikutnya
-  // memperbarui item yang sama, tanpa keluar dari form.
   useEffect(() => {
     if (isDirty || createdIdRef.current === null) return;
     const createdId = createdIdRef.current;
@@ -195,12 +187,6 @@ export default function ExperienceFormPage() {
             </div>
           </form>
 
-          {/* Bar aksi fixed di dasar layar: lebarnya selalu sama persis dengan
-              area konten. `fixed` menjamin bar menempel di bawah layar dan
-              tidak ikut naik saat discroll. Posisi kiri memakai
-              `--sidebar-offset` (dari wrapper) sehingga selalu sejajar
-              dengan tepi kiri konten, baik sidebar expanded maupun
-              collapsed. Sudut siku (tanpa pembulatan). */}
           <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-end gap-2 border bg-card/95 px-4 py-3 shadow-sm backdrop-blur lg:px-6 md:left-[var(--sidebar-offset)]">
             <Button onClick={goBack} type="button" variant="ghost">
               {t("Batal")}

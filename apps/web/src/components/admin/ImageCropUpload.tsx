@@ -26,13 +26,10 @@ interface ImageCropUploadProps {
   hint?: string;
   scope?: string;
   aspect?: number;
-  /** Tampilan ringkas: thumbnail + nama file + tombol aksi ringkas. */
   compact?: boolean;
-  /** Jangan turunkan resolusi hasil crop (tetap ukuran piksel asli). */
   preserveSize?: boolean;
 }
 
-/** Pick/upload an image, crop it to `aspect`, then upload the cropped result. */
 export default function ImageCropUpload({
   value,
   onChange,

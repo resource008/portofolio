@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
 
-/** "Empty email" illustration, recolorable via `currentColor`. */
 export function EmptyEmailIllustration({ className }: { className?: string }) {
   return (
     <svg

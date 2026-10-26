@@ -18,14 +18,12 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/** Replace the count with the authoritative value from the server. */
 export function setInboxUnreadCount(count: number): void {
   if (count === unreadCount) return;
   unreadCount = count;
   emit();
 }
 
-/** Optimistic decrement when a message is opened (marked read on the server). */
 export function decrementInboxUnread(): void {
   if (unreadCount <= 0) return;
   unreadCount -= 1;

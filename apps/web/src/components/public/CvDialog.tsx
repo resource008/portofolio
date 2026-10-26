@@ -13,7 +13,6 @@ interface CvDialogContentProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Dialog CV (tanpa tombol) — bisa dipicu dari komponen mana pun. */
 export function CvDialogContent({ url, open, onOpenChange }: CvDialogContentProps) {
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -33,7 +32,6 @@ export function CvDialogContent({ url, open, onOpenChange }: CvDialogContentProp
   );
 }
 
-/** Tombol + dialog CV (dipakai di kolom kiri hero). */
 export function CvDialog({ url }: CvDialogProps) {
   const [open, setOpen] = useState(false);
 

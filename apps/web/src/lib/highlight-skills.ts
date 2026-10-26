@@ -1,4 +1,3 @@
-/** Pilihan untuk "Skill Highlight" (peran / keahlian utama). */
 export const HIGHLIGHT_SKILL_OPTIONS: string[] = [
   "Full Stack Developer",
   "Frontend Developer",
