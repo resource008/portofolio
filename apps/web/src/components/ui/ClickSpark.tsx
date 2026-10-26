@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useRef, type ReactNode } from "react";
 
-/**
- * ClickSpark — diadaptasi dari React Bits (reactbits.dev/animations/click-spark).
- * Memercikkan garis-garis kecil dari titik klik di atas kanvas transparan.
- */
+/** Diadaptasi dari React Bits (reactbits.dev/animations/click-spark). */
 interface Spark {
   x: number;
   y: number;
@@ -18,7 +15,6 @@ interface ClickSparkProps {
   sparkCount?: number;
   duration?: number;
   extraScale?: number;
-  /** Bila false, klik tidak memercikkan apa pun (mis. saat unlike). */
   active?: boolean;
   className?: string;
   children?: ReactNode;
@@ -41,7 +37,6 @@ export function ClickSpark({
   const sparksRef = useRef<Spark[]>([]);
   const frameRef = useRef<number | null>(null);
 
-  // Kanvas mengikuti ukuran pembungkus (plus ruang untuk percikan di luar tepi).
   useEffect(() => {
     const canvas = canvasRef.current;
     const parent = canvas?.parentElement;
@@ -102,7 +97,6 @@ export function ClickSpark({
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    // Klik via keyboard tidak punya koordinat → percik dari tengah.
     const fromKeyboard = event.detail === 0;
     const x = fromKeyboard ? rect.width / 2 : event.clientX - rect.left;
     const y = fromKeyboard ? rect.height / 2 : event.clientY - rect.top;

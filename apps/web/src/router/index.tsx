@@ -16,13 +16,11 @@ function AdminRouteFallback() {
 
 export const router = createBrowserRouter([
   {
-    // Halaman public berbagi layout yang memasang intro situs.
     element: <PublicLayout />,
     hydrateFallbackElement: <RouteFallback />,
     children: [
       { path: "/", element: <HomePage /> },
       {
-        // Link proyek (/projects/:slug) membuka halaman daftar dengan drawer proyek itu.
         path: "/projects/:slug?",
         lazy: () => import("../pages/public/ProjectsPage").then((m) => ({ Component: m.default })),
       },

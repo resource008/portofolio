@@ -14,11 +14,6 @@ interface HeroProfileUploadsProps {
   onCvChange: (url: string) => void;
 }
 
-/**
- * Bagian "Hero & Profil": input Logo, Foto Konten, dan File CV.
- * Ketiganya sejajar hanya pada layar md ke atas; di layar lebih kecil
- * ditumpuk satu kolom agar tidak sempit.
- */
 export default function HeroProfileUploads({
   logoUrl,
   photoUrl,

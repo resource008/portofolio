@@ -1,12 +1,10 @@
 import { del, head, list, put } from "@vercel/blob";
 import { env } from "../env";
 
-/** Whether the Vercel Blob credentials are configured. */
 export function isStorageConfigured(): boolean {
   return Boolean(env.blobReadWriteToken);
 }
 
-/** Whether a key is a safe object name, optionally inside one scope folder. */
 export function isKeyValid(key: string): boolean {
   if (!key || key.includes("..")) return false;
   const segments = key.split("/");
@@ -21,10 +19,7 @@ export interface StoredObject {
   lastModified: string;
 }
 
-/**
- * Upload a file to the blob store as a public object. The returned URL is
- * stable and can be persisted in the database.
- */
+/** The returned URL is stable and can be persisted in the database. */
 export async function uploadBlob(
   key: string,
   file: File,
@@ -44,13 +39,11 @@ export async function uploadBlob(
   return { key: blob.pathname, url: blob.url, size: file.size };
 }
 
-/** The public URL of an existing object, resolved from its key/pathname. */
 export async function getObjectUrl(key: string): Promise<string> {
   const info = await head(key);
   return info.url;
 }
 
-/** List every object in the store (paginated), optionally under a prefix. */
 export async function listObjects(prefix?: string): Promise<StoredObject[]> {
   const objects: StoredObject[] = [];
   let cursor: string | undefined;
@@ -77,13 +70,11 @@ export async function listObjects(prefix?: string): Promise<StoredObject[]> {
   return objects;
 }
 
-/** Sum the size of every object in the store, in bytes. */
 export async function getStorageUsedBytes(): Promise<number> {
   const objects = await listObjects();
   return objects.reduce((sum, item) => sum + item.size, 0);
 }
 
-/** Delete an object by key/pathname (or URL). */
 export async function deleteObject(key: string): Promise<void> {
   await del(key);
 }

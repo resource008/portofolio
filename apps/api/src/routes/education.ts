@@ -142,7 +142,6 @@ function parseGpa(value: string | number | null | undefined): number | null {
 
 type AchievementInput = z.infer<typeof achievementSchema>;
 
-/** Simpan satu pencapaian beserta daftar dokumennya di dalam transaksi. */
 async function insertCertificate(
   tx: TransactionSql,
   educationId: number,

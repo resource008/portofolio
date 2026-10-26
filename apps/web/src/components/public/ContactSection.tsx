@@ -80,9 +80,6 @@ export function ContactSection() {
   return (
     <section className="scroll-mt-[7rem] bg-muted/40 py-16 md:py-28" id="contact">
       <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2">
-        {/* Frame 1 — Available: logo di atas, teks di bawah, langsung di atas
-            background (tanpa kartu/bingkai). Rata tengah saat layout satu kolom,
-            rata kiri saat berdampingan dengan form (lg). */}
         <div
           className="flex flex-col items-center gap-6 text-center lg:items-start lg:text-left"
           ref={revealRef}

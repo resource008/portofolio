@@ -28,17 +28,10 @@ function BrandLogo({ profile }: { profile?: HeroProfile }) {
   );
 }
 
-/**
- * Header public: running announcement sebagai strip berwarna sesuai tipe di
- * atas header, lalu logo di kiri + toggle dark/light di kanan. Saat di-scroll
- * strip disembunyikan dan header tampil mengambang (float).
- */
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
-  // Announcement hanya tampil di Beranda, tidak di halaman lain (mis. /projects).
   const { pathname } = useLocation();
   const isHome = pathname === "/";
-  // Pencarian proyek hanya ada di halaman Proyek (/projects dan /projects/:slug).
   const showSearch = pathname === "/projects" || pathname.startsWith("/projects/");
   const { theme, setTheme } = useTheme();
   const { data: profile } = useQuery({
@@ -55,8 +48,6 @@ export function PublicHeader() {
 
   const isDark = resolveTheme(theme) === "dark";
 
-  // Entrance setelah intro: logo & sakelar turun masuk, lalu strip announcement
-  // terbuka dari atas. Sekali per pemuatan halaman (tidak saat pindah halaman).
   const headerRef = useRef<HTMLElement>(null);
   const introDone = useIntroDone();
   const entranceAllowed = useRef<boolean | null>(null);
@@ -87,7 +78,6 @@ export function PublicHeader() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50" ref={headerRef}>
-      {/* Running announcement — strip berwarna di atas header; dilipat saat di-scroll. */}
       {isHome ? (
       <div
         aria-hidden={scrolled}
@@ -104,7 +94,6 @@ export function PublicHeader() {
       </div>
       ) : null}
 
-      {/* Saat di-scroll header mengambang: pill dengan jarak dari tepi layar. */}
       <div
         className={cn(
           "mx-auto max-w-6xl transition-[padding] duration-300 ease-out",
@@ -115,13 +104,10 @@ export function PublicHeader() {
           className={cn(
             "flex items-center justify-between rounded-full border transition-all duration-300 ease-out",
             scrolled
-              ? // Glassmorphism: latar sangat transparan + blur & saturasi, tepi terang tipis,
-                // dan highlight di sisi atas agar terlihat seperti kaca.
-                "h-14 border-white/40 bg-white/15 px-1.5 pr-3 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.45),0_10px_30px_-10px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-neutral-900/25 dark:shadow-[inset_0_1px_0_0_rgb(255_255_255/0.08),0_10px_30px_-10px_rgb(0_0_0/0.6)]"
+              ? "h-14 border-white/40 bg-white/15 px-1.5 pr-3 shadow-[inset_0_1px_0_0_rgb(255_255_255/0.45),0_10px_30px_-10px_rgb(0_0_0/0.25)] backdrop-blur-xl backdrop-saturate-150 dark:border-white/10 dark:bg-neutral-900/25 dark:shadow-[inset_0_1px_0_0_rgb(255_255_255/0.08),0_10px_30px_-10px_rgb(0_0_0/0.6)]"
               : "h-16 border-transparent px-4 sm:px-6",
           )}
         >
-        {/* Logo di kiri. */}
         <a
           data-entrance="logo"
           aria-label="Ke atas"
@@ -131,7 +117,6 @@ export function PublicHeader() {
           <BrandLogo profile={profile} />
         </a>
 
-        {/* Kanan: pencarian proyek (khusus /projects) + sakelar dark/light. */}
         <div className="flex items-center gap-2.5" data-entrance="toggle">
           {showSearch ? <HeaderSearch /> : null}
           <button

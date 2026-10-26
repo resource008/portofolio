@@ -41,10 +41,6 @@ const glyph = (Icon: React.ComponentType<React.ComponentProps<"svg">>) => (
   <Icon aria-hidden className="size-[22px]" />
 );
 
-/**
- * Di homepage dock disembunyikan selama hero masih terlihat, lalu muncul
- * setelah hero di-scroll lewat. Di halaman lain dock selalu tampil.
- */
 function useDockVisible(): boolean {
   const { pathname } = useLocation();
   const [pastHero, setPastHero] = useState(false);
@@ -67,7 +63,6 @@ function useDockVisible(): boolean {
   return pathname !== "/" || pastHero;
 }
 
-/** Item dock yang aktif: "projects" di halaman /projects, "home" di homepage. */
 function useActiveSection(): "home" | "projects" | null {
   const { pathname } = useLocation();
   if (pathname === "/") return "home";
@@ -76,7 +71,6 @@ function useActiveSection(): "home" | "projects" | null {
 }
 
 const PROJECTS_SEEN_KEY = "projects-last-seen";
-/** Pengunjung baru: proyek yang terbit dalam rentang ini dihitung sebagai "baru". */
 const NEW_PROJECT_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
 
 function readLastSeen(): number {
@@ -89,10 +83,6 @@ function readLastSeen(): number {
   return Date.now() - NEW_PROJECT_WINDOW_MS;
 }
 
-/**
- * Jumlah proyek yang terbit sejak pengunjung terakhir membuka /projects,
- * untuk badge di item Projects pada dock. Membuka /projects mereset badge.
- */
 function useNewProjectsCount(): number {
   const { pathname } = useLocation();
   const [lastSeen, setLastSeen] = useState(readLastSeen);
@@ -108,7 +98,6 @@ function useNewProjectsCount(): number {
     try {
       localStorage.setItem(PROJECTS_SEEN_KEY, String(now));
     } catch {
-      // Abaikan — badge hanya hilang untuk sesi ini.
     }
   }, [pathname]);
 
@@ -118,7 +107,6 @@ function useNewProjectsCount(): number {
   ).length;
 }
 
-/** Scroll halus ke section di homepage; dari halaman lain, pindah ke homepage dulu. */
 function useSectionNavigator() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -135,10 +123,6 @@ function useSectionNavigator() {
   };
 }
 
-/**
- * Footer dock: navigasi Home & Projects, lalu ikon sosial media. Icons are driven by the links added from the admin
- * (`/api/social-links`), dipisah dengan separator dari navigasi.
- */
 export function SocialDock() {
   const { data } = useQuery({
     queryKey: ["social-links"],
@@ -158,8 +142,6 @@ export function SocialDock() {
     if (href) window.open(href, "_blank", "noopener,noreferrer");
   };
 
-  // Layar kecil dengan >1 sosial media: ringkas jadi satu item "…" yang
-  // membuka menu berisi seluruh sosial media.
   const socialItems: DockItemData[] =
     isMobile && links.length > 1
       ? [

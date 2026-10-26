@@ -1,22 +1,11 @@
 import { useRef, useState, type ButtonHTMLAttributes, type ReactNode, type TouchEvent } from "react";
 import { cn } from "@/lib/utils";
 
-// Lebar tray = 2 tombol aksi (ikon saja, masing-masing 48px).
 const ACTION_WIDTH = 96;
-// Jarak kecil antara item dan tray aksi saat row terbuka penuh.
 const ACTION_GAP = 8;
-// Total geseran yang dibutuhkan untuk membuka aksi sepenuhnya.
 const TOTAL_SLIDE = ACTION_WIDTH + ACTION_GAP;
-// Aksi baru "menetap" terbuka jika row digeser minimal separuh dari total,
-// jadi geser kecil tidak langsung memunculkan tombol aksi.
 const OPEN_THRESHOLD = TOTAL_SLIDE / 2;
 
-/**
- * Swipe a row to the left to reveal trailing actions (e.g. Edit / Delete).
- * When `enabled` is false it just renders the children unchanged.
- * Aksi terakhir (biasanya "Hapus") ditempatkan paling kanan sehingga muncul
- * lebih dulu saat row digeser sedikit.
- */
 export function SwipeActions({
   children,
   actions,
@@ -28,7 +17,6 @@ export function SwipeActions({
   actions: ReactNode;
   enabled?: boolean;
   className?: string;
-  /** Render tanpa latar kartu (mis. di dalam drawer list). */
   bare?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -65,9 +53,7 @@ export function SwipeActions({
   }
 
   const offset = drag ?? (open ? -TOTAL_SLIDE : 0);
-  // Aksi muncul bertahap mengikuti seberapa jauh row digeser (progress reveal),
-  // bukan langsung penuh saat mulai menyentuh. Saat row tertutup tetap
-  // tersembunyi agar tidak tembus lewat konten transparan (mis. di drawer).
+  // Saat tertutup aksi tetap tersembunyi agar tidak tembus lewat konten transparan.
   const reveal = Math.min(1, Math.abs(offset) / TOTAL_SLIDE);
 
   return (
@@ -101,7 +87,6 @@ export function SwipeActions({
   );
 }
 
-/** A single full-height action button shown in the swipe tray (ikon saja). */
 export function SwipeActionButton({
   className,
   children,

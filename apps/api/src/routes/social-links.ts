@@ -23,7 +23,6 @@ socialLinkRoutes.get("/social-links", async (c) => {
     FROM social_links
     ORDER BY order_index, id
   `;
-  // The platform name and logo are always derived from the link URL.
   return ok(
     c,
     rows.map((row) => ({
@@ -38,7 +37,6 @@ const linkSchema = z.object({
   url: safeUrl(),
 });
 
-/** The logo is resolved automatically from the link URL. */
 function logoFor(url: string): string | null {
   return resolveLogoFromUrl(url);
 }

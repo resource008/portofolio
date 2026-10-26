@@ -1,9 +1,7 @@
 import { validateUpload } from "@portofolio/shared";
 
-/** Maximum output dimension (longest edge) for uploaded images. */
 const MAX_DIMENSION = 2560;
 
-/** Images we never re-encode, e.g. animated GIFs. */
 const UNTOUCHABLE = new Set(["image/gif"]);
 
 function loadImage(src: string): Promise<HTMLImageElement> {
@@ -17,12 +15,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/**
- * Downscale a raster image to `MAX_DIMENSION` (longest edge) and re-encode it
- * as WebP so uploaded photos stay small and load fast. GIFs (animated), PDFs
- * and videos are returned unchanged. If the original is already smaller than
- * the optimized result, the original is kept.
- */
 export async function optimizeImageFile(file: File): Promise<File> {
   if (!file.type.startsWith("image/") || UNTOUCHABLE.has(file.type)) return file;
 
@@ -75,8 +67,6 @@ export async function optimizeImageFile(file: File): Promise<File> {
       ),
     );
 
-    // Keep the original when re-encoding produced a bigger file (rare for
-    // small PNGs/JPEGs) — only if it still passes the size limit.
     if (blob.size > file.size) {
       const fallback = file;
       const validation = validateUpload(fallback);

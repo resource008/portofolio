@@ -26,7 +26,6 @@ function getMode(): ProjectEditorMode {
   return currentMode;
 }
 
-/** Snapshot used during SSR / hydration where the editor is never open. */
 function getServerMode(): ProjectEditorMode {
   return null;
 }
@@ -37,10 +36,6 @@ export function useProjectEditorMode(): ProjectEditorMode {
 
 let resetProjectEditor: (() => void) | null = null;
 
-/**
- * Register a handler that exits the project editor (used by the topbar
- * breadcrumb link so it returns to the project list).
- */
 export function registerProjectEditorReset(handler: (() => void) | null): void {
   resetProjectEditor = handler;
 }

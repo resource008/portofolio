@@ -11,16 +11,10 @@ export function isSafeUrl(value: string): boolean {
   return !scheme || SAFE_URL_SCHEMES.has(scheme);
 }
 
-/** Non-empty string that is safe to render as a link or media source. */
 export const safeUrl = () =>
   z.string().trim().min(1).refine(isSafeUrl, "URL tidak valid atau skemanya tidak diizinkan.");
 
-/**
- * Zod-validator wrapper that converts validation failures into the app's
- * standard error envelope (`{ success: false, message, errors }`) instead of
- * Hono's default `{ error: { issues } }`, so clients can render per-field
- * errors through `ApiError.errors`.
- */
+/** Returns the app's error envelope instead of Hono's default `{ error: { issues } }`. */
 export function zValidate<T extends ZodSchema>(schema: T) {
   return zValidator("json", schema, (result, c) => {
     if (!result.success) {

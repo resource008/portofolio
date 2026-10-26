@@ -38,10 +38,6 @@ function subscribe(listener: () => void): () => void {
   };
 }
 
-/**
- * Terjemahkan teks: teks sumber ditulis dalam bahasa Indonesia, dan versi
- * Inggrisnya diambil dari kamus `EN`. Placeholder `{nama}` diisi dari `vars`.
- */
 export function translate(
   text: string,
   vars?: Record<string, string | number>,

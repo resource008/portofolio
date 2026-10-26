@@ -13,12 +13,8 @@ import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { ENTRANCE } from "@/lib/intro";
 import giraffeVR from "@/assets/illustrations/giraffe-vr-headset.svg";
 
-/**
- * Halaman daftar proyek (/projects). Pencarian ada di header (HeaderSearch).
- */
 export default function ProjectsPage() {
   const [selected, setSelected] = useState<Project | null>(null);
-  // Dibuka dari link proyek (/projects/:slug) → tampilkan drawer proyek itu.
   const { slug } = useParams();
   const navigate = useNavigate();
   const drawerProject = selected ?? (slug ? { slug } : null);
@@ -26,7 +22,6 @@ export default function ProjectsPage() {
     setSelected(null);
     if (slug) navigate("/projects", { replace: true });
   };
-  // Judul halaman langsung terlihat — entrance-nya menunggu header lebih dulu.
   const revealRef = useRef<HTMLDivElement>(null);
   useRevealOnScroll(revealRef, ENTRANCE.content);
 
@@ -35,8 +30,6 @@ export default function ProjectsPage() {
     queryFn: () => apiGet<Project[]>("/home/projects"),
   });
 
-  // Query yang sama dengan ProjectDrawer (cache dipakai bersama) untuk
-  // mendeteksi slug yang tidak ada → tampilkan halaman 404.
   const { error: slugError } = useQuery({
     queryKey: ["project", slug],
     queryFn: () => apiGet<ProjectDetail>(`/projects/${slug}`),
@@ -59,7 +52,6 @@ export default function ProjectsPage() {
     <div className="min-h-svh bg-background">
       <PublicHeader />
       <main className="mx-auto max-w-6xl px-4 pb-28 pt-28 sm:px-6 md:pt-36">
-        {/* Ilustrasi di kiri, judul & deskripsi di kanan. */}
         <div className="mx-auto flex max-w-3xl items-center gap-4 sm:gap-8" ref={revealRef}>
           <img
             data-reveal="img"

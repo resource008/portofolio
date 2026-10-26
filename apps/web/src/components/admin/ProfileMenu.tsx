@@ -34,9 +34,7 @@ interface ProfileMenuProps {
   } | null;
   onLogout: () => void;
   side?: "top" | "bottom";
-  /** "menu" renders a desktop dropdown; "drawer" renders a bottom drawer (mobile). */
   mode?: "menu" | "drawer";
-  /** Custom trigger element (used when the menu is embedded in another surface). */
   trigger?: ReactElement;
 }
 

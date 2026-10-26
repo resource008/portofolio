@@ -1,6 +1,5 @@
 import { existsSync } from "node:fs";
 
-// Load apps/api/.env (Node 22 native env file loader).
 if (existsSync(".env")) {
   process.loadEnvFile();
 }

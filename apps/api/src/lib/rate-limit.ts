@@ -4,10 +4,7 @@ import { getConnInfo } from "@hono/node-server/conninfo";
 import { env } from "../env";
 import { fail } from "./response";
 
-/**
- * Client IP. `X-Forwarded-For` can be forged by the client, so it is only
- * trusted when the API runs behind a reverse proxy (`TRUST_PROXY=true`).
- */
+/** `X-Forwarded-For` can be forged, so it is only trusted behind a reverse proxy (`TRUST_PROXY=true`). */
 export function clientIp(c: Context): string | null {
   if (env.trustProxy) {
     const forwarded = c.req.header("x-forwarded-for")?.split(",")[0]?.trim();
@@ -20,10 +17,7 @@ export function clientIp(c: Context): string | null {
   }
 }
 
-/**
- * Fixed-window, in-memory rate limit per client IP. Good enough for a single
- * API instance; counters reset on restart and are not shared across instances.
- */
+/** In-memory per instance: counters reset on restart and are not shared across instances. */
 export function rateLimit(options: { windowMs: number; max: number; message?: string }) {
   const hits = new Map<string, { count: number; resetAt: number }>();
 

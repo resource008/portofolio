@@ -101,8 +101,6 @@ export function SidebarProvider({
   const isMobile = useMediaQuery("max-md");
   const [openMobile, setOpenMobile] = React.useState(false);
 
-  // This is the internal state of the sidebar.
-  // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(() => readSidebarCookie() ?? defaultOpen);
   const open = openProp ?? _open;
   const setOpen = React.useCallback(
@@ -114,7 +112,6 @@ export function SidebarProvider({
         _setOpen(openState);
       }
 
-      // This sets the cookie to keep the sidebar state.
       if (typeof cookieStore !== "undefined") {
         await cookieStore.set({
           expires: Date.now() + SIDEBAR_COOKIE_MAX_AGE * 1000,
@@ -129,12 +126,10 @@ export function SidebarProvider({
     [setOpenProp, open],
   );
 
-  // Helper to toggle the sidebar.
   const toggleSidebar = React.useCallback(() => {
     return isMobile ? setOpenMobile((open) => !open) : setOpen((open) => !open);
   }, [isMobile, setOpen]);
 
-  // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent): void => {
       const target = event.target as HTMLElement | null;
@@ -159,8 +154,6 @@ export function SidebarProvider({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [toggleSidebar]);
 
-  // We add a state so that we can do data-state="expanded" or "collapsed".
-  // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed";
 
   const contextValue = React.useMemo<SidebarContextProps>(
@@ -261,7 +254,6 @@ export function Sidebar({
       data-state={state}
       data-variant={variant}
     >
-      {/* This is what handles the sidebar gap on desktop */}
       <div
         className={cn(
           "relative w-(--sidebar-width) bg-transparent transition-[width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
@@ -279,7 +271,6 @@ export function Sidebar({
           side === "left"
             ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
             : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
-          // Adjust the padding for floating and inset variants.
           variant === "floating" || variant === "inset"
             ? "p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]"
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
@@ -491,7 +482,6 @@ export function SidebarGroupAction({
   const defaultProps = {
     className: cn(
       "absolute top-3.5 right-3 flex aspect-square w-5 items-center justify-center rounded-lg p-0 text-sidebar-foreground outline-hidden ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
-      // Increases the hit area of the button on mobile.
       "after:absolute after:-inset-2 md:after:hidden",
       "group-data-[collapsible=icon]:hidden",
       className,
@@ -615,7 +605,6 @@ export function SidebarMenuAction({
   const defaultProps = {
     className: cn(
       "absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-lg p-0 text-sidebar-foreground outline-hidden ring-sidebar-ring transition-transform hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 peer-hover/menu-button:text-sidebar-accent-foreground [&>svg:not([class*='size-'])]:size-4 [&>svg]:shrink-0",
-      // Increases the hit area of the button on mobile.
       "after:absolute after:-inset-2 md:after:hidden",
       "peer-data-[size=sm]/menu-button:top-1",
       "peer-data-[size=default]/menu-button:top-1.5",
@@ -665,7 +654,6 @@ export function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
   showIcon?: boolean;
 }): React.ReactElement {
-  // Random width between 50 to 90%.
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`;
   }, []);

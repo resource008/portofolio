@@ -51,7 +51,6 @@ function toAnnouncement(row: AnnouncementRow) {
   };
 }
 
-/** Resolve the published projects promoted by a `project` announcement. */
 async function resolveProjects(row: AnnouncementRow): Promise<ProjectRow[]> {
   if (row.kind !== "project") return [];
 
@@ -73,7 +72,6 @@ async function resolveProjects(row: AnnouncementRow): Promise<ProjectRow[]> {
   `;
 }
 
-// Public: active announcements, ordered, with promoted projects resolved.
 announcementRoutes.get("/project-announcements", async (c) => {
   const rows = await sql<AnnouncementRow[]>`
     SELECT id, kind, type, text, is_active, order_index, post_mode, project_ids
@@ -92,7 +90,6 @@ announcementRoutes.get("/project-announcements", async (c) => {
   return ok(c, { announcements });
 });
 
-// Admin: semua announcement.
 announcementRoutes.get("/admin/project-announcements", requireAdmin, async (c) => {
   const rows = await sql<AnnouncementRow[]>`
     SELECT id, kind, type, text, is_active, order_index, post_mode, project_ids

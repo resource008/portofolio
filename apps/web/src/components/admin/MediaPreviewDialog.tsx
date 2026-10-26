@@ -8,15 +8,11 @@ interface MediaPreviewDialogProps {
   url: string | null;
   title?: string;
   onClose: () => void;
-  /** Opsional: daftar URL foto untuk navigasi preview (prev/next). */
   photos?: string[];
   index?: number;
   onIndexChange?: (index: number) => void;
 }
 
-/** In-app preview for images and PDFs (no new tab).
- *  Saat `photos` diberikan, preview menjadi galeri dengan navigasi prev/next
- *  (tombol panah tampil di layar besar md+ dan dukungan tombol panah keyboard). */
 export default function MediaPreviewDialog({
   open,
   url,
@@ -34,8 +30,7 @@ export default function MediaPreviewDialog({
   const currentUrl = hasGallery ? photos![safeIndex] : url;
   const isPdf = currentUrl ? /\.pdf($|\?)/i.test(currentUrl) : false;
 
-  // Nilai-nilai yang dipakai di dalam event handler dibaca lewat ref supaya
-  // handler selalu memakai nilai terbaru (tidak ada stale closure).
+  // Dibaca lewat ref supaya handler tidak memakai nilai basi (stale closure).
   const canNavRef = useRef(canNav);
   canNavRef.current = canNav;
   const photosRef = useRef(photos);
@@ -51,10 +46,7 @@ export default function MediaPreviewDialog({
     onIndexChangeRef.current((safeIndexRef.current + step + list.length) % list.length);
   }
 
-  // Navigasi foto pakai keyboard: ←/→, dan < > (termasuk tombol fisik , dan .
-  // yang menghasilkan < dan > saat ditekan tanpa Shift). Listener dipasang di
-  // document dengan fase capture supaya tidak bisa diblokir/di-stop oleh komponen
-  // lain di dalam dialog.
+  // Listener di document dengan fase capture supaya tidak bisa di-stop komponen lain di dialog.
   const lastWheelRef = useRef(0);
 
   useEffect(() => {
@@ -65,16 +57,13 @@ export default function MediaPreviewDialog({
       const navNext =
         event.key === "ArrowRight" || event.key === ">" || event.key === ".";
       if (!navBack && !navNext) return;
-      // Cegah halaman/dialog ikut scroll saat menekan panah di dalam preview.
       event.preventDefault();
       if (navBack) go(-1);
       if (navNext) go(1);
     }
-    // Scroll roda mouse: ke atas = foto sebelumnya, ke bawah = foto berikutnya.
     function onWheel(event: WheelEvent) {
       event.preventDefault();
       const now = Date.now();
-      // Batasi kecepatan agar tidak melompat banyak foto dalam satu gerakan.
       if (now - lastWheelRef.current < 300) return;
       const delta =
         Math.abs(event.deltaY) > Math.abs(event.deltaX) ? event.deltaY : event.deltaX;

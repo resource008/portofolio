@@ -14,9 +14,6 @@ type RevealTargets = {
   sidebarItems: HTMLElement[];
 };
 
-// Every "part" of the page body that should animate on its own. Pages can mark
-// blocks explicitly with `data-content-anim`; otherwise we fall back to the
-// direct children of the page wrapper (the usual `<div className="space-y-6">`).
 function collectContentSections(content: HTMLElement | null): HTMLElement[] {
   if (!content) return [];
   const explicit = Array.from(content.querySelectorAll<HTMLElement>("[data-content-anim]"));
@@ -30,39 +27,23 @@ function collectContentSections(content: HTMLElement | null): HTMLElement[] {
 }
 
 const ENTRANCE_SCALE = 1.4;
-// Same size as the entrance so the progress ring (sized for 40px * 1.4) sits
-// just outside the photo instead of overlapping its edge on menu navigation.
 const CENTER_SCALE = ENTRANCE_SCALE;
-// The centered logo starts this many px lower and slides up to 0 once the
-// loading caption ("Selamat Datang!" / "Mohon Tunggu") appears, so the logo + caption
-// block reads as vertically centered (morph movement).
 const LOGO_MORPH_LIFT = 44;
-// How long the entrance lingers after "Selamat Datang!" + username before revealing.
 const ENTRANCE_HOLD = 5;
-// How long the "Mohon Tunggu" stage lingers on menu navigation.
 const COVER_HOLD = 0.7;
-// Clockwise progress outline drawn around the photo on the entrance. Sized to
-// sit just outside the photo at its entrance scale (40px * 1.4 = 56px) while
-// leaving margin inside the 64px viewBox so the stroke never gets clipped.
 export const RING_RADIUS = 29;
 export const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
 const RING_SECONDS = 1.2;
-// Loading-text timings.
 const WELCOME_STROKE = 1.2;
 const TYPING_SECONDS = 1.4;
 const COVER_STROKE = 1;
 const FILL_DELAY = 0.18;
 const FILL_SECONDS = 0.35;
-// The loading block is display:none by default in CSS so the browser never
-// paints it before GSAP takes over (no flash on refresh).
+// Hidden via CSS by default so it never paints before GSAP takes over.
 const LOADING_DISPLAY = "flex";
 
-// The loading caption is a ReactBits <StrokeText> (outline draw, then fill).
-// A fresh `nonce` remounts it so the draw animation replays on every use.
 export type LoadingCaption = { text: string; welcome: boolean; nonce: number };
 
-// Type the GitHub username underneath "Selamat Datang!" (delayed until the outline
-// has drawn a bit).
 function startTyping(el: HTMLElement, username: string): gsap.core.Tween {
   const state = { count: 0 };
   el.textContent = "";
@@ -80,8 +61,6 @@ function startTyping(el: HTMLElement, username: string): gsap.core.Tween {
   });
 }
 
-// A browser reload (F5) vs a fresh navigation such as the redirect right after
-// the GitHub login. Reloads show "Mohon Tunggu"; logins/entry show "Selamat Datang!".
 function isPageReload(): boolean {
   if (typeof performance === "undefined") return false;
   const entry = performance.getEntriesByType("navigation")[0] as
@@ -90,9 +69,6 @@ function isPageReload(): boolean {
   return entry?.type === "reload";
 }
 
-// Marks that the "Selamat Datang!" entrance has already played this browsing session,
-// so any later dashboard mount (e.g. an in-app remount) shows "Mohon Tunggu"
-// instead - matching the refresh flow.
 const ENTRANCE_KEY = "admin-entrance-shown";
 
 function consumeWelcomeEntrance(): boolean {
@@ -106,9 +82,7 @@ export function resetWelcomeEntrance(): void {
   if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(ENTRANCE_KEY);
 }
 
-// Measure the ghost photo in its natural (untransformed) spot, then return the
-// x/y/scale that makes its bounding box land exactly on `target`. Transforms
-// use a center origin, hence the size*(scale-1)/2 compensation.
+// Transforms use a center origin, hence the size*(scale-1)/2 compensation.
 function placeGhostAt(
   el: HTMLElement,
   target: { left: number; top: number; width: number; height: number },
@@ -123,11 +97,6 @@ function placeGhostAt(
   };
 }
 
-// Phase 4 & 5 shared by every transition. Each region gets its own distinct
-// motion so the eye can tell them apart:
-//  - Sidebar rows cascade in laterally from the left (top -> down stagger).
-//  - Topbar drops down from above (vertical wipe with blur).
-//  - Content parts rise up from below one after another (per-section stagger).
 function revealItemsAndContent(tl: gsap.core.Timeline, t: RevealTargets, at: number): void {
   tl.fromTo(
     t.sidebarItems,
@@ -136,14 +105,12 @@ function revealItemsAndContent(tl: gsap.core.Timeline, t: RevealTargets, at: num
     at,
   )
     .to(t.contentFrame ?? [], { opacity: 1, duration: 0.4, ease: "soft" }, at + 0.06)
-    // Topbar IN from above: drops down and unblurs.
     .fromTo(
       t.topbar ?? [],
       { opacity: 0, y: -28, filter: "blur(10px)" },
       { opacity: 1, y: 0, filter: "blur(0px)", duration: 0.62, ease: "sidebar" },
       at + 0.1,
     )
-    // Content parts IN from below, staggered so each section lands in turn.
     .fromTo(
       t.contentSections.length > 0 ? t.contentSections : (t.content ?? []),
       { opacity: 0, y: 40, filter: "blur(8px)" },
@@ -214,8 +181,7 @@ export function useDashboardTransition({
       topbarChrome: Array.from(root.querySelectorAll<HTMLElement>("[data-topbar-chrome]")),
       sidebarFrame: root.querySelector<HTMLElement>('[data-slot="sidebar-inner"]'),
       contentFrame: root.querySelector<HTMLElement>("[data-transition-frame]"),
-      // Lebar harus > 0: label yang disembunyikan saat sidebar diciutkan
-      // (mode ikon, w-0) tidak boleh ikut dianimasikan ke opacity 1.
+      // Lebar harus > 0: label tersembunyi saat sidebar diciutkan tidak boleh ikut dianimasikan.
       sidebarItems: Array.from(root.querySelectorAll<HTMLElement>("[data-sidebar-anim]")).filter(
         (el) => el.offsetWidth > 0,
       ),
@@ -229,8 +195,6 @@ export function useDashboardTransition({
 
   useEffect(() => killText, [killText]);
 
-  // Phases 3-5: fade the loading out, FLIP the ghost logo back to its slot in
-  // the sidebar, then reveal the sidebar and content.
   const buildReveal = useCallback((): gsap.core.Timeline | null => {
     const flight = flightRef.current;
     const flightAvatar = flightAvatarRef.current;
@@ -255,23 +219,16 @@ export function useDashboardTransition({
 
     killText();
 
-    // Whatever lift the caption morph left behind, reset it before the FLIP so
-    // the ghost lands exactly on the logo's real slot.
+    // Reset the caption lift before the FLIP so the ghost lands on the real slot.
     const logoWrap = flightLogoWrapRef.current;
     if (logoWrap) gsap.set(logoWrap, { y: 0 });
 
-    // On mobile the logo lives inside the topbar, so the header itself must stay
-    // fully visible (fading it would hide the logo too). Instead we hide the
-    // topbar "chrome" (background + menus) and reveal it only after the photo
-    // has landed. Reset the header first so the logo target is measured at its
-    // real, untransformed spot.
+    // On mobile the logo lives in the topbar, so hide only its chrome, not the header.
     if (isMobile) {
       gsap.set(topbar ?? [], { opacity: 1, y: 0, filter: "none" });
       gsap.set(topbarChrome, { opacity: 0, y: -16, filter: "blur(8px)" });
     }
 
-    // Re-measure the real logo at reveal time so the landing is exact for the
-    // current sidebar state (collapsed or expanded).
     const target = logo.getBoundingClientRect();
     const targetRadius = Number.parseFloat(window.getComputedStyle(logo).borderRadius) || 12;
 
@@ -308,15 +265,12 @@ export function useDashboardTransition({
       },
     });
 
-    // The progress outline belongs to the entrance only; it's gone by the time
-    // the photo FLIPs back to its sidebar slot.
     if (flightRing) {
       gsap.set(flightRing, { opacity: 0, attr: { "stroke-dashoffset": RING_CIRCUMFERENCE } });
     }
 
     tl.to(flightLoading, { opacity: 0, duration: 0.2, ease: "power2.in" }, 0)
       .to(sidebarFrame ?? [], { opacity: 1, duration: 0.4, ease: "power2.out" }, 0.1)
-      // GSAP FLIP: animate the photo from the center to its real sidebar spot.
       .add(() => {
         const state = Flip.getState(flight);
         const { x, y, scale } = placeGhostAt(flight, target);
@@ -338,8 +292,6 @@ export function useDashboardTransition({
       .set(flight, { display: "none" }, 0.66);
 
     if (isMobile) {
-      // Mobile: the logo has already flown back and is standing in place. Now
-      // the topbar chrome (background + side menus) drops in, then content.
       tl.to(
         topbarChrome,
         {
@@ -373,8 +325,6 @@ export function useDashboardTransition({
     return tl;
   }, [query, killText, hideCaption, isMobile]);
 
-  // Phases 1-2 for a menu click: clear, fly the logo to the center and draw the
-  // "Mohon Tunggu" stroke text before revealing the next page.
   const runCovering = useCallback(
     ({ onCovered }: { onCovered?: () => void } = {}): boolean => {
       const flight = flightRef.current;
@@ -400,21 +350,15 @@ export function useDashboardTransition({
       const radius = Number.parseFloat(window.getComputedStyle(logo).borderRadius) || 12;
 
       gsap.set(flight, { display: "grid", opacity: 1, borderRadius: radius });
-      // Reveal the loading block (the "Mohon Tunggu" text sits below the photo)
-      // BEFORE measuring, otherwise the centered column grows after the ghost's
-      // start offset is computed and the icon lands off the sidebar slot.
+      // Reveal the loading block before measuring, or the ghost lands off the sidebar slot.
       gsap.set(flightLoading, { display: LOADING_DISPLAY, opacity: 0 });
-      // The progress outline draws around the photo, same as the entrance.
       if (flightRing) {
         gsap.set(flightRing, { opacity: 0, attr: { "stroke-dashoffset": RING_CIRCUMFERENCE } });
       }
-      // "Mohon Tunggu" has no username line.
       if (flightTyping) flightTyping.textContent = "";
       if (flightTypingRow) gsap.set(flightTypingRow, { display: "none" });
 
-      // Offset the centered column BEFORE measuring, so the ghost's start
-      // (placeGhostAt) lands exactly on the real logo slot; it then flies to
-      // the (offset) center and morphs up once the caption appears.
+      // Offset the column before measuring so placeGhostAt starts on the real logo slot.
       if (logoWrap) gsap.set(logoWrap, { y: LOGO_MORPH_LIFT });
 
       const { x, y, scale } = placeGhostAt(flight, rect);
@@ -436,19 +380,16 @@ export function useDashboardTransition({
             setPhase("revealing");
           },
         })
-        // Sidebar rows leave to the left (mirrors their entrance).
         .to(
           sidebarItems,
           { opacity: 0, x: -14, filter: "blur(4px)", duration: 0.22, stagger: 0.02, ease: "power2.in" },
           0,
         )
-        // Topbar leaves upward (mirrors its entrance).
         .to(
           topbar ?? [],
           { opacity: 0, y: -20, filter: "blur(6px)", duration: 0.24, ease: "power2.in" },
           0,
         )
-        // Content parts leave downward one after another (reverse stagger).
         .to(
           contentSections.length > 0 ? contentSections : content,
           { opacity: 0, y: 24, filter: "blur(8px)", duration: 0.26, stagger: 0.05, ease: "soft" },
@@ -460,8 +401,6 @@ export function useDashboardTransition({
           { x: 0, y: 0, scale: CENTER_SCALE, borderRadius: 999, duration: 0.62, ease: "sidebar" },
           0.16,
         )
-        // Draw the progress outline clockwise around the photo, then the
-        // "Mohon Tunggu" stroke text appears below it.
         .to(flightRing ?? [], { opacity: 1, duration: 0.2, ease: "power2.out" }, textAt)
         .to(
           flightRing ?? [],
@@ -485,7 +424,6 @@ export function useDashboardTransition({
   const start = useCallback(
     (to: string) => {
       if (phase !== "idle" || to === pathname) return;
-      // Animasi dimatikan dari menu akun: pindah halaman langsung.
       if (!getMotionEnabled()) {
         navigate(to);
         return;
@@ -496,13 +434,8 @@ export function useDashboardTransition({
     [navigate, pathname, phase, runCovering],
   );
 
-  // Initial load: hide sidebar + content, then draw a clockwise outline around
-  // the photo. The logo only shows once the outline is full. A browser reload
-  // shows "Mohon Tunggu"; a fresh login/entry shows "Selamat Datang!" with the GitHub
-  // username typed underneath. Then the photo FLIPs to its slot.
   const playEntrance = useCallback(() => {
     if (phase !== "idle") return;
-    // Animasi dimatikan dari menu akun: tampilkan dashboard apa adanya.
     if (!getMotionEnabled()) return;
 
     const flight = flightRef.current;
@@ -528,8 +461,6 @@ export function useDashboardTransition({
 
     setPhase("entrance");
 
-    // Hide the sidebar + content; the loading block starts invisible. Initial
-    // states mirror each region's distinct entrance direction.
     gsap.set(sidebarItems, { opacity: 0, x: -28, filter: "blur(6px)" });
     gsap.set(topbar ?? [], { opacity: 0, y: -28, filter: "blur(10px)" });
     gsap.set(
@@ -542,9 +473,6 @@ export function useDashboardTransition({
     );
     gsap.set(logo, { opacity: 0 });
 
-    // The ghost sits in its natural spot at the top of the centered stack, so
-    // no x/y math is needed here; only the entrance scale. It stays hidden
-    // until the outline is complete so only the outline shows at first.
     gsap.set(flight, {
       display: "grid",
       x: 0,
@@ -556,22 +484,17 @@ export function useDashboardTransition({
       transformOrigin: "50% 50%",
     });
 
-    // The logo pops in once the outline completes; the outline starts empty.
     if (flightAvatar) gsap.set(flightAvatar, { scale: 0.8 });
     if (flightRing) {
       gsap.set(flightRing, { opacity: 1, attr: { "stroke-dashoffset": RING_CIRCUMFERENCE } });
     }
 
     gsap.set(flightLoading, { display: LOADING_DISPLAY, opacity: 0 });
-    // The logo starts slightly lower and morphs up once the caption appears.
     if (logoWrap) gsap.set(logoWrap, { y: LOGO_MORPH_LIFT });
     flightTyping.textContent = "";
 
     const reload = isPageReload();
-    // Show "Selamat Datang!" only for a genuine entry (login / first mount of the
-    // session). A reload or any later mount shows "Mohon Tunggu".
     const welcome = !reload && consumeWelcomeEntrance();
-    // "Mohon Tunggu" has no username line.
     if (flightTypingRow) {
       gsap.set(flightTypingRow, { display: welcome ? "flex" : "none" });
     }
@@ -580,7 +503,6 @@ export function useDashboardTransition({
 
     const tl = gsap.timeline({ onComplete: () => buildReveal() });
 
-    // Draw the outline clockwise (12 o'clock -> around).
     if (flightRing) {
       tl.to(
         flightRing,
@@ -588,7 +510,6 @@ export function useDashboardTransition({
         0,
       );
     }
-    // Once full, the logo appears with a small pop.
     tl.to(flight, { opacity: 1, duration: 0.3, ease: "power2.out" }, RING_SECONDS);
     if (flightAvatar) {
       tl.fromTo(
@@ -598,8 +519,6 @@ export function useDashboardTransition({
         RING_SECONDS,
       );
     }
-    // Reload / later mounts: "Mohon Tunggu". Genuine entry (login): "Selamat Datang!"
-    // with the GitHub username typed below.
     tl.to(flightLoading, { opacity: 1, duration: 0.3, ease: "power2.out" }, textAt);
     if (logoWrap) {
       tl.to(logoWrap, { y: 0, duration: 0.5, ease: "sidebar" }, textAt);

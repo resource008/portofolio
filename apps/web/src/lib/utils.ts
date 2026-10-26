@@ -30,18 +30,10 @@ export function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-/**
- * Ambil nama file dari URL, termasuk URL yang di-encode.
- */
 export function fileNameFromUrl(url: string): string {
   return decodeURIComponent(url.split("/").pop() ?? "");
 }
 
-/**
- * Potong nama file panjang di tengah sambil mempertahankan ekstensi,
- * mis. "1791740-8f3a-4c2b-968.webp" -> "1791740...4c2b-968.webp".
- * Nama pendek dikembalikan apa adanya.
- */
 export function truncateFileName(name: string, maxLength = 24): string {
   const clean = name.trim();
   if (clean.length <= maxLength) return clean;
@@ -58,10 +50,6 @@ export function truncateFileName(name: string, maxLength = 24): string {
   return `${head}...${tail}${extension}`;
 }
 
-/**
- * True jika nilai dokumen adalah file yang diunggah (path relatif atau URL blob
- * store), bukan tautan eksternal seperti URL kredensial.
- */
 export function isDocumentFile(value: string): boolean {
   const doc = value.trim();
   if (!doc) return false;

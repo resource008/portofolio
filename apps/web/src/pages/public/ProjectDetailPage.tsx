@@ -10,14 +10,12 @@ import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 import { PhotoLightbox } from "@/components/public/PhotoLightbox";
 import { glassPillClass, ProjectActions } from "@/components/public/ProjectActions";
 
-/** Posisi horizontal media (image/video) sesuai blok: kiri / tengah / kanan. */
 function mediaAlignClass(align?: ProjectBlockAlign | null): string {
   if (align === "left") return "me-auto ms-0";
   if (align === "right") return "ms-auto me-0";
   return "mx-auto";
 }
 
-/** `logoOnly`: tampilkan logo saja (nama muncul sebagai tooltip saat hover); bila logo tidak ada, tetap tampilkan nama. */
 function TechPill({ name, logoOnly = false }: { name: string; logoOnly?: boolean }) {
   const logo = resolveTechLogo(name);
   const [failed, setFailed] = useState(false);
@@ -64,11 +62,6 @@ function TechPill({ name, logoOnly = false }: { name: string; logoOnly?: boolean
   );
 }
 
-/**
- * Blok galeri: foto berjajar dalam satu baris yang bisa di-scroll/swipe ke
- * kanan-kiri. Tinggi foto seragam, lebarnya mengikuti ukuran asli foto
- * (tidak di-crop). Klik foto membuka lightbox untuk melihat semua foto.
- */
 function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: boolean }) {
   const [viewing, setViewing] = useState<number | null>(null);
 
@@ -79,7 +72,6 @@ function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: 
       <div
         className={cn(
           "flex snap-x snap-mandatory gap-2 overflow-x-auto pb-2 [scrollbar-width:thin]",
-          // Di drawer menembus padding kontainer, item pertama tetap sejajar teks.
           bleed && "-mx-6 scroll-px-6 px-6",
         )}
       >
@@ -118,15 +110,10 @@ function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: 
   );
 }
 
-/**
- * `bleed`: media (gambar, video, galeri) dibuat penuh rata kanan-kiri
- * menembus padding kontainer — dipakai di drawer (padding p-6).
- */
 function ContentBlock({ block, bleed = false }: { block: ProjectBlock; bleed?: boolean }) {
   switch (block.type) {
     case "heading": {
-      // Blok Heading berisi HTML dari editor konten; blok isTitle adalah judul
-      // proyek yang sudah dirender sebagai h1 di atas.
+      // Blok isTitle sudah dirender sebagai h1 di atas.
       if (block.isTitle) return null;
       return (
         <div
@@ -211,12 +198,6 @@ function ContentBlock({ block, bleed = false }: { block: ProjectBlock; bleed?: b
   }
 }
 
-/**
- * Baris tech stack seperti running text yang berulang terus: tiap putaran
- * berjalan ke kiri sampai habis keluar dari tampilan, lalu muncul lagi di
- * posisi awal dan berjalan kembali. Berhenti saat di-hover (agar tooltip
- * mudah dibaca) dan dilewati saat reduced motion.
- */
 function TechStackRow({ stacks, logoOnly }: { stacks: string[]; logoOnly: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
 
@@ -229,7 +210,6 @@ function TechStackRow({ stacks, logoOnly }: { stacks: string[]; logoOnly: boolea
     let hovered = false;
     let stopped = false;
 
-    // Satu putaran: muncul di awal, diam sejenak, lalu berjalan sampai habis.
     const cycle = () => {
       if (stopped) return;
       const distance = track.scrollWidth;
@@ -284,14 +264,12 @@ export function ProjectDetailBody({
   bleed = false,
 }: {
   project: ProjectDetail;
-  /** Media penuh rata kanan-kiri (dipakai di drawer). */
   bleed?: boolean;
 }) {
   const cover = project.media[0];
 
   return (
     <article>
-      {/* Cover media */}
       <div
         className={cn(
           "relative overflow-hidden bg-muted",

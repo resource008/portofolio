@@ -5,7 +5,6 @@ export interface ContentSection {
   description: string;
 }
 
-/** Single source of truth for the "Ubah Konten" submenu + routes. */
 export const CONTENT_SECTIONS: ContentSection[] = [
   {
     id: "hero",

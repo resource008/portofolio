@@ -18,12 +18,10 @@ const trackLimit = rateLimit({ windowMs: 60_000, max: 30 });
 
 analyticsRoutes.post("/analytics/track", trackLimit, zValidator("json", trackSchema), async (c) => {
   const body = c.req.valid("json");
-  const dayOfWeek = new Date().getDay(); // 0 = Minggu … 6 = Sabtu
+  const dayOfWeek = new Date().getDay();
   const ip = clientIp(c);
 
-  // Unlike membatalkan like: hapus satu log like dari IP yang sama dan kurangi
-  // jumlahnya — tidak dicatat sebagai event tersendiri. Like dari IP lain tidak
-  // bisa dibatalkan.
+  // Unlike hanya menghapus satu log like dari IP yang sama; like dari IP lain tidak bisa dibatalkan.
   if (body.event_type === "unlike") {
     if (body.target_type === "project" && body.target_id && ip) {
       const deleted = await sql`

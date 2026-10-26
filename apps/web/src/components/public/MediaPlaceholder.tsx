@@ -11,15 +11,9 @@ interface MediaPlaceholderProps {
   icon?: React.ComponentType<React.ComponentProps<"svg">>;
   iconClassName?: string;
   label?: string;
-  /** Above-the-fold images should load eagerly with high priority. */
   priority?: boolean;
 }
 
-/**
- * Renders an image when a URL is available, otherwise a soft gray rounded
- * placeholder — matching the "gray box" mockup treatment. Falls back to the
- * placeholder icon when the image is missing or fails to load.
- */
 export function MediaPlaceholder({
   src,
   alt = "",

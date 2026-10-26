@@ -5,7 +5,6 @@ import { router } from "./router";
 import { ToastProvider } from "@/components/ui/toast";
 import { useFavicon } from "@/lib/favicon";
 
-/** Komponen kosong di dalam QueryClientProvider untuk efek global (favicon). */
 function GlobalEffects() {
   useFavicon();
   return null;

@@ -88,7 +88,6 @@ function TopbarBreadcrumb({ onNavigate }: { onNavigate: (to: string) => void }) 
   const isEditingProject = section?.id === "projects" && editorMode != null;
   const isEditingEducation = section?.id === "education" && educationMode != null;
 
-  // Halaman tambah/edit experience terpisah → crumb ketiga setelah "Experience".
   const experienceFormLabel =
     pathname === "/admin/content/experience/new"
       ? t("Tambah Pengalaman")
@@ -190,7 +189,7 @@ function TopbarBreadcrumb({ onNavigate }: { onNavigate: (to: string) => void }) 
   );
 }
 
-// Durasi animasi tutup sheet (duration-200 di sheet.tsx) + sedikit jeda.
+// Harus sedikit di atas durasi animasi tutup sheet (duration-200 di sheet.tsx).
 const SHEET_CLOSE_MS = 240;
 
 function SidebarNav({
@@ -205,9 +204,7 @@ function SidebarNav({
   const { state, isMobile, openMobile, setOpenMobile } = useSidebar();
   const collapsed = state === "collapsed" && !isMobile;
 
-  // Mobile: tutup sheet sidebar dulu, baru mulai transisi "Mohon Tunggu" —
-  // kalau tidak, sheet + backdrop-nya tetap terlihat selama transisi dan logo
-  // di topbar diukur saat masih tertutup sheet. Dipakai semua item menu.
+  // Tutup sheet dulu sebelum transisi, kalau tidak sheet ikut terlihat dan logo topbar salah ukur.
   const onNavigate = (to: string) => {
     if (isMobile && openMobile && to !== pathname) {
       setOpenMobile(false);
@@ -217,9 +214,6 @@ function SidebarNav({
     navigateTo(to);
   };
 
-  // Mobile: saat sidebar (sheet) dibuka/ditutup, item menu muncul/lenyap satu
-  // per satu (stagger) dari kiri. Desktop tidak perlu — transisi entrance yang
-  // menangani reveal.
   const prevOpen = useRef<boolean | null>(null);
   useEffect(() => {
     if (!isMobile) return;
@@ -232,7 +226,6 @@ function SidebarNav({
 
     if (prevOpen.current === null) {
       prevOpen.current = openMobile;
-      // Popup sheet baru terpasang karena baru dibuka → langsung stagger masuk.
       if (!openMobile || !motionOk) return;
       gsap.fromTo(
         collect(),
@@ -334,8 +327,6 @@ function SidebarNav({
               size={isMobile ? "lg" : "default"}
               tooltip={t(item.label)}
             >
-              {/* Mobile: ikon besar (size-6) disamakan dengan font besar (text-lg).
-                  Desktop: ikon standar (size-4). */}
               <item.icon className={cn(isMobile ? "size-6" : "size-4")} />
               {item.to === "/admin/inbox" && inboxUnread > 0 && (
                 <SidebarMenuBadge className="h-5 min-w-5 rounded-full bg-destructive px-1 text-white tabular-nums">
@@ -360,10 +351,7 @@ function NavCollapsibleGroup({
   onNavigate,
 }: {
   label: string;
-  /** Ikon menu; ukurannya mengikuti mode: besar (size-6) saat mobile/large,
-      standar (size-4) saat desktop. */
   icon?: React.ComponentType<React.ComponentProps<"svg">>;
-  /** Mobile: label besar (text-lg), ikon besar, dan tombol lebih tinggi. */
   large?: boolean;
   isActive: boolean;
   children: { to: string; label: string }[];
@@ -373,8 +361,7 @@ function NavCollapsibleGroup({
   const { t } = useLanguage();
   const [open, setOpen] = useState(isActive);
 
-  // Keep the group open when navigation moves into it, without fighting the
-  // user's manual toggle (only force-open when it becomes active).
+  // Only force-open when the group becomes active, so the user's manual toggle is respected.
   useEffect(() => {
     if (isActive) setOpen(true);
   }, [isActive]);
@@ -440,7 +427,6 @@ function SidebarToggle() {
   );
 }
 
-/** Tombol close di dalam sidebar untuk menutup (menyembunyikan) sidebar. */
 function SidebarCloseButton() {
   const { isMobile, setOpen, setOpenMobile } = useSidebar();
   const { t } = useLanguage();
@@ -459,8 +445,6 @@ function SidebarCloseButton() {
   );
 }
 
-/** Tutup sidebar mobile (sheet) otomatis setelah navigasi selesai, supaya
-    drawer tidak tetap terbuka menimpa halaman baru. */
 function MobileSidebarAutoClose() {
   const { pathname } = useLocation();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -496,7 +480,6 @@ function AdminLayoutContent() {
   const inboxUnread = useRealtimeInboxCount();
   const username =
     (user as { username?: string | null } | null | undefined)?.username ?? user?.name ?? "admin";
-  // When there's no photo (or it fails to load), fall back to the profile icon.
   const [avatarFailed, setAvatarFailed] = useState(false);
   const showAvatar = Boolean(avatarUrl) && !avatarFailed;
 
@@ -538,7 +521,6 @@ function AdminLayoutContent() {
     [go, pathname],
   );
 
-  // Play the same loading entrance on the initial page load / refresh.
   const entrancePlayed = useRef(false);
   useLayoutEffect(() => {
     if (entrancePlayed.current) return;
@@ -558,15 +540,12 @@ function AdminLayoutContent() {
         <MobileSidebarAutoClose />
         <Sidebar collapsible="icon" variant="floating">
           {isMobile ? (
-            // Mobile: sidebar hanya berisi menu — tanpa tulisan logo, cukup
-            // tombol close di pojok kanan atas.
             <SidebarHeader className="p-2">
               <div className="flex justify-end">
                 <SidebarCloseButton />
               </div>
             </SidebarHeader>
           ) : (
-            // Desktop (md+): header seperti semula — logo, nama, dan username.
             <SidebarHeader className="p-2">
               <Link className="flex w-full items-center gap-3" onClick={handleLogoClick} to="/admin">
                 <Avatar
@@ -704,10 +683,6 @@ function AdminLayoutContent() {
             active ? "pointer-events-auto" : "pointer-events-none",
           )}
         >
-          {/* Photo + copy centered as a group. The progress outline draws
-              clockwise around the photo; below it the stroke-text ("Welcome!"
-              / "Please Wait") and the typed GitHub username. The copy block is
-              always laid out (opacity-0) but invisible until GSAP reveals it. */}
           <div className="relative flex flex-col items-center gap-4">
             <div ref={flightLogoWrapRef} className="relative grid place-items-center">
               <svg

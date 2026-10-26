@@ -130,7 +130,6 @@ const SOCIAL_NAMES: Record<string, string> = {
   "twitch.tv": "Twitch",
 };
 
-/** Derive a friendly platform name from a link URL (e.g. github.com -> "GitHub"). */
 export function resolveSocialName(url: string | null | undefined): string {
   const value = (url ?? "").trim();
   if (!value) return "";
@@ -157,7 +156,6 @@ export function resolveSocialName(url: string | null | undefined): string {
   return label ? label.charAt(0).toUpperCase() + label.slice(1) : host;
 }
 
-/** Derive a favicon/logo URL from any link URL (or an email address). */
 export function resolveLogoFromUrl(url: string | null | undefined): string | null {
   const value = (url ?? "").trim();
   if (!value) return null;

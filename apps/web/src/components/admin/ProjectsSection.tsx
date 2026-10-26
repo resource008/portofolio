@@ -120,8 +120,6 @@ const EMPTY: ProjectForm = {
   date_range: "",
   media: [],
   tech_stacks: [],
-  // Proyek baru disimpan sebagai draf, bukan langsung dipublikasikan — supaya
-  // saat keluar editor (kembali) otomatis tersimpan dan tampil "Draf" di homepage.
   is_published: false,
   content: [],
 };
@@ -157,12 +155,10 @@ function abbreviatePeriod(value: string): string {
   return value.replace(/[A-Za-z]+/g, (month) => MONTH_ABBR[month] ?? month);
 }
 
-/** Apakah periode proyek sedang berjalan (badge ditampilkan sebagai "Now")? */
 function isOngoingPeriod(value: string): boolean {
   return /(^|[-–])\s*(now|sekarang)\s*$/i.test(value.trim());
 }
 
-/** Ambil bagian awal periode, mis. "Sep 2024" dari "Sep 2024 - Now". */
 function periodStart(value: string): string {
   return value.split(/\s*[-–]\s*/)[0].trim();
 }
@@ -198,10 +194,6 @@ function blockHasContent(block: ProjectBlock): boolean {
   return block.url.trim() !== "";
 }
 
-/**
- * File yang baru dipilih belum langsung diunggah ke storage — disimpan dulu
- * sebagai object URL, baru diunggah saat proyek disimpan.
- */
 const pendingLocalFiles = new Map<string, File>();
 
 function registerLocalFile(url: string, file: File): void {
@@ -213,7 +205,6 @@ function clearLocalFiles(): void {
   pendingLocalFiles.clear();
 }
 
-/** Judul proyek diambil dari blok Heading yang ditandai isTitle (fallback: heading pertama). */
 function projectTitleFromBlocks(blocks: ProjectBlock[]): string {
   const titleBlock =
     blocks.find((b) => b.type === "heading" && b.isTitle) ??
@@ -242,8 +233,6 @@ export default function ProjectsSection({
   const [pendingDelete, setPendingDelete] = useState<Project | null>(null);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [pendingDeleteIds, setPendingDeleteIds] = useState<number[] | null>(null);
-  // Mode pilih massal — checkbox di kartu hanya muncul saat mode ini aktif
-  // (diaktifkan lewat tombol "Pilih Item" di toolbar).
   const [selectMode, setSelectMode] = useState(false);
   const exitSelectMode = () => {
     setSelectMode(false);
@@ -251,7 +240,6 @@ export default function ProjectsSection({
     setPendingDeleteIds(null);
   };
   const selectionToastId = useRef<string | null>(null);
-  // Mode tampilan daftar proyek: kartu (grid) atau list (baris).
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [selection, setSelection] = useState<number | null>(null);
   const [projectTab, setProjectTab] = useState<"category" | "period" | "tech" | null>(null);
@@ -259,14 +247,11 @@ export default function ProjectsSection({
     "idle" | "pending" | "saving" | "saved" | "error"
   >("idle");
   const autoSaveTimer = useRef<number | null>(null);
-  // Tandai sesi editor yang baru dimulai dari "Tambah Proyek" supaya breadcrumb
-  // tetap menampilkan "Tambah Proyek" meski auto-save sudah memberi id.
   const isNewSessionRef = useRef(false);
   const isMobile = useMediaQuery("max-md");
   const requestLeave = useRequestLeave();
 
-  // Target portal untuk bar aksi simpan: ditempel langsung ke scroll container
-  // (SidebarInset) supaya sticky bottom benar-benar berfungsi saat scroll.
+  // Portal ke scroll container (SidebarInset) supaya sticky bottom berfungsi.
   const [actionBarHost, setActionBarHost] = useState<HTMLElement | null>(null);
   useEffect(() => {
     setActionBarHost(document.querySelector<HTMLElement>("[data-transition-frame]"));
@@ -365,7 +350,6 @@ export default function ProjectsSection({
         title: projectTitleFromBlocks(form.content),
         category: form.category,
         date_range: form.date_range || null,
-        // Cover hanya dari field cover — dihapus berarti proyek tanpa cover.
         media,
         tech_stacks: form.tech_stacks.map((item) => item.trim()).filter(Boolean),
         is_published: form.is_published,
@@ -389,7 +373,6 @@ export default function ProjectsSection({
     },
   });
 
-  /** Simpan proyek sebagai draf tanpa menutup editor; menyerap id baru. */
   async function persistDraft(form: ProjectForm): Promise<void> {
     const { payload, resolvedUrls } = await buildProjectPayload(form);
     const saved = await saveMutation.mutateAsync({ ...payload, id: form.id });
@@ -418,8 +401,7 @@ export default function ProjectsSection({
     };
     const next = { ...form, id: saved.id };
     setBaseline(applyResolved(next));
-    // Proyek baru: pakai id dari server supaya penyimpanan berikutnya jadi PUT,
-    // dan ganti URL lokal (blob:) dengan URL hasil unggah.
+    // Pakai id dari server supaya simpan berikutnya jadi PUT; ganti URL blob: dengan URL unggahan.
     setEditing((current) =>
       current ? { ...applyResolved(current), id: saved.id } : current,
     );
@@ -468,7 +450,6 @@ export default function ProjectsSection({
       .catch(() => {});
   }
 
-  /** Submit form (mis. tekan Enter di kolom isian) → simpan dengan status publikasi saat ini. */
   function submit() {
     saveAndClose(editing?.is_published ?? false);
   }
@@ -530,16 +511,11 @@ export default function ProjectsSection({
     baseline !== null &&
     JSON.stringify(editing) !== JSON.stringify(baseline);
 
-  // Auto-save: perubahan ditunda sejenak, lalu disimpan sebagai draf.
-  // Berlaku juga untuk proyek baru — saat tidak ada aktivitas, proyek baru
-  // otomatis dibuat sebagai draf (mendapat id dari server) dan status berubah
-  // menjadi "Tersimpan".
   useEffect(() => {
     if (!editing) return;
     if (autoSaveTimer.current != null) window.clearTimeout(autoSaveTimer.current);
     autoSaveTimer.current = null;
-    // Belum ada perubahan, atau form belum lengkap (judul Heading + kategori)
-    // sehingga belum bisa disimpan — jangan menampilkan "Menyimpan…" selamanya.
+    // Form belum lengkap tidak bisa disimpan — jangan tampilkan "Menyimpan…" selamanya.
     if (!isDirty || !formValid(editing)) {
       if (!isDirty) setSaveStatus((status) => (status === "saved" ? status : "idle"));
       return;
@@ -559,12 +535,8 @@ export default function ProjectsSection({
 
   useUnsavedChangesGuard({ isDirty, onSave: saveEditing, autoSaveOnLeave: true });
 
-  // Sidebar kanan hanya menampilkan panel data proyek (Category / Period /
-  // Tech Stack) yang dibuka lewat tombol overlay pada cover media.
   const hasSidebar = projectTab != null;
 
-  // Data proyek (Category / Period / Tech Stack) diakses lewat tombol
-  // overlay pada cover; sidebar/drawer menampilkan panel yang sesuai.
   function openProjectTab(tab: "category" | "period" | "tech" | null) {
     setSelection(null);
     setProjectTab(tab);
@@ -575,7 +547,6 @@ export default function ProjectsSection({
     setSelection(index);
   }
 
-  // Delete / Backspace removes the selected canvas block (unless typing).
   useEffect(() => {
     if (!editing) return;
     function onKeyDown(event: KeyboardEvent) {
@@ -606,9 +577,6 @@ export default function ProjectsSection({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [editing, selection]);
 
-  // Expose the editor state to the admin topbar breadcrumb. Sesi "Tambah
-  // Proyek" selalu dilaporkan sebagai "create" — meski auto-save sudah memberi
-  // id — agar breadcrumb tidak berubah menjadi "Draft Proyek".
   useEffect(() => {
     setProjectEditorMode(
       editing
@@ -623,12 +591,10 @@ export default function ProjectsSection({
     );
   }, [editing]);
 
-  // Bersihkan object URL file lokal saat editor ditutup.
   useEffect(() => {
     if (!editing) clearLocalFiles();
   }, [editing]);
 
-  // Let the topbar breadcrumb "Proyek" link return to the project list.
   const requestLeaveRef = useRef(requestLeave);
   requestLeaveRef.current = requestLeave;
   useEffect(() => {
@@ -642,8 +608,6 @@ export default function ProjectsSection({
     return () => registerProjectEditorReset(null);
   }, []);
 
-  // Aksi "Pilih Item" tampil sebagai toast coss ui di pojok kanan atas di
-  // semua ukuran layar (persisten selama mode pilih aktif).
   const showSelectionToast = !editing && selectMode;
   useEffect(() => {
     if (!showSelectionToast) {
@@ -671,7 +635,6 @@ export default function ProjectsSection({
     } else {
       selectionToastId.current = toastManager.add({
         ...options,
-        // Toast diusap/ditutup → keluar dari mode pilih.
         onClose: () => {
           selectionToastId.current = null;
           exitSelectMode();
@@ -690,8 +653,6 @@ export default function ProjectsSection({
   return (
     <>
       <div className="space-y-6">
-        {/* Judul, deskripsi & tombol sticky tepat di bawah topbar; hanya
-            daftar card di bawahnya yang ter-scroll. */}
         {!editing && (
           <div className="sticky top-14 z-[15] before:pointer-events-none before:absolute before:inset-x-0 before:bottom-full before:h-14 before:bg-background -mx-4 -mt-3 flex flex-wrap items-start justify-between gap-3 border-b bg-background px-4 py-3 lg:-mx-6 lg:px-6">
             <div>
@@ -699,8 +660,6 @@ export default function ProjectsSection({
               <p className="text-muted-foreground text-sm">{description}</p>
             </div>
 
-            {/* Tab Card/ListBulletIcon + tombol Pilih Item di pojok kanan atas, sejajar
-                dengan judul "Projects" dan keterangannya. */}
             {!isLoading && items.length > 0 && (
               <div className="flex flex-wrap items-center gap-2">
                 <div
@@ -792,8 +751,6 @@ export default function ProjectsSection({
                 !isMobile && "flex items-start justify-center gap-6",
               )}
             >
-              {/* Tanpa frame kartu di semua ukuran layar: editor langsung di
-                  halaman dengan lebar kolom seperti post. */}
               <div className={cn("min-w-0", !isMobile && "max-w-2xl flex-1")}>
                 <div className="space-y-5">
                   <CoverMediaField
@@ -820,8 +777,6 @@ export default function ProjectsSection({
                 </div>
               </div>
 
-              {/* Sidebar kanan: panel data proyek (Category / Period / Tech
-                  Stack) yang dibuka lewat tombol di dalam cover media. */}
               {!isMobile && hasSidebar && (
                 <aside className="sticky top-[78px] w-80 shrink-0 self-start">
                   <EditorSidebar
@@ -843,7 +798,6 @@ export default function ProjectsSection({
           </div>
         </Card>
       ) : items.length === 0 ? (
-        // Empty state tanpa background — logo + judul langsung di tengah.
         <Empty>
           <EmptyHeader>
             <EmptyMedia>
@@ -899,7 +853,6 @@ export default function ProjectsSection({
         </div>
       )}
 
-      {/* FAB — tombol melayang di pojok kanan bawah, hanya ikon "+" saja. */}
       {!editing && (
         <Button
           aria-label={t("Tambah proyek")}
@@ -946,8 +899,6 @@ export default function ProjectsSection({
       />
       </div>
 
-      {/* Bar aksi simpan — di-portal langsung ke scroll container (SidebarInset)
-          agar sticky bottom benar-benar menempel di dasar layar saat scroll. */}
       {editing &&
         actionBarHost &&
         createPortal(
@@ -955,9 +906,6 @@ export default function ProjectsSection({
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
               <div aria-hidden="true" />
               <div className="flex min-w-0 items-center justify-center gap-2">
-                {/* Badge status publikasi — hanya tampil saat mengedit proyek yang
-                    sudah ada (bukan sesi "Tambah Proyek"). "Draf" saat belum
-                    dipublikasikan, "Terbit" saat Dipublikasikan aktif. */}
                 {!isNewSessionRef.current &&
                   (editing.is_published ? (
                     <Badge variant="success">{t("Terbit")}</Badge>
@@ -994,8 +942,6 @@ export default function ProjectsSection({
                   />
                   <MenuPopup align="end" side="top" sideOffset={8} className="w-60">
                     <MenuGroup>
-                      {/* Proyek yang sudah terbit cukup "Simpan" (tetap terbit);
-                          draf baru ditawari "Simpan dan Publikasikan". */}
                       <MenuItem onClick={() => saveAndClose(true)}>
                         {editing.is_published ? <ArrowDownTrayIcon /> : <ArrowUpTrayIcon />}
                         {editing.is_published ? t("Simpan") : t("Simpan dan Publikasikan")}
@@ -1026,11 +972,6 @@ function projectTabLabel(tab: "category" | "period" | "tech" | null): string {
         : "";
 }
 
-/**
- * Tombol data proyek (Kategori / Periode di kiri atas, Tech Stack di kiri
- * bawah) yang menumpang di atas cover media. Dirender di dalam wrapper
- * `relative` milik CoverMediaField.
- */
 function ProjectMetaBar({
   projectTab,
   onProjectTab,
@@ -1090,7 +1031,6 @@ function ProjectMetaBar({
       </button>
       </div>
 
-      {/* Drawer mobile untuk data proyek (Category / Period Time / Tech Stack). */}
       {isMobile && projectTab && (
         <Drawer
           onOpenChange={(open) => {
@@ -1118,7 +1058,6 @@ function ProjectMetaBar({
   );
 }
 
-/** Upload cover gambar/video proyek: dropzone saat kosong, pratinjau saat terisi. */
 function CoverMediaField({
   media,
   onChange,
@@ -1126,7 +1065,6 @@ function CoverMediaField({
 }: {
   media: ProjectMedia[];
   onChange: (media: ProjectMedia[]) => void;
-  /** Overlay di atas cover (tombol data proyek). */
   children?: React.ReactNode;
 }) {
   const { t } = useLanguage();
@@ -1167,7 +1105,6 @@ function MediaDropzone({ onAdd }: { onAdd: (item: ProjectMedia) => void }) {
   function handleFiles(files: FileList | File[] | null) {
     const list = files ? Array.from(files) : [];
     if (list.length === 0) return;
-    // Cover hanya satu media — pakai file valid pertama.
     for (const file of list) {
       const validation = validateUpload(file);
       if (!validation.ok) {
@@ -1179,7 +1116,6 @@ function MediaDropzone({ onAdd }: { onAdd: (item: ProjectMedia) => void }) {
         continue;
       }
       const isVideo = file.type.startsWith("video/");
-      // Belum diunggah ke storage — hanya preview lokal; diunggah saat disimpan.
       const url = URL.createObjectURL(file);
       registerLocalFile(url, file);
       onAdd({ type: isVideo ? "video" : "image", url });
@@ -1297,12 +1233,6 @@ function ProjectCover({ url }: { url: string }) {
   );
 }
 
-/**
- * Body kartu/baris proyek — konten di dalam kartu bisa discroll sendiri
- * (overflow-y-auto) sementara bagian atas kartu (cover media) tetap menempel
- * (sticky), jadi judul dan meta tidak ikut menghilang saat isi panjang.
- * Tombol Edit & Hapus berada di sisi kanan, sejajar dengan judul/category/period.
- */
 function ProjectItemBody({ item }: { item: Project }) {
   const { language } = useLanguage();
   return (
@@ -1337,7 +1267,6 @@ function ProjectItemBody({ item }: { item: Project }) {
   );
 }
 
-/** Menu "..." berisi Ubah & Hapus — ditempatkan di pojok kanan bawah cover. */
 function ProjectItemMenu({
   loadingDetail,
   onEdit,
@@ -1376,7 +1305,6 @@ function ProjectItemMenu({
   );
 }
 
-/** Badge tech stack di cover — hanya logo saja (tanpa nama). */
 function TechLogoChip({ name }: { name: string }) {
   const logo = resolveTechLogo(name);
   const [failed, setFailed] = useState(false);
@@ -1397,12 +1325,6 @@ function TechLogoChip({ name }: { name: string }) {
   );
 }
 
-/**
- * Cover media dalam daftar (kartu/baris). Tech stack hanya logo di pojok
- * kiri bawah gambar; badge status (Published/Draft) di pojok kiri atas —
- * saat checkbox pilih massal muncul, badge otomatis bergeser ke kanan agar
- * tidak bertumpuk.
- */
 function ProjectItemCover({
   item,
   selectMode,
@@ -1438,9 +1360,6 @@ function ProjectItemCover({
         </span>
       )}
 
-      {/* Pojok kiri atas: checkbox pilih massal (saat mode pilih aktif) lalu
-          badge status — badge bergeser ke kanan saat checkbox muncul.
-          Checkbox dibungkus latar kontras supaya terlihat di atas gambar. */}
       <div className="absolute start-2 top-2 z-10 flex items-center gap-1.5">
         {selectMode && (
           <span className="grid size-6 shrink-0 place-items-center rounded-md bg-background p-0.5 shadow-md">
@@ -1455,7 +1374,6 @@ function ProjectItemCover({
         <StatusBadge isPublished={item.is_published} />
       </div>
 
-      {/* Tech stack — hanya logo, pojok kiri bawah gambar. */}
       {item.tech_stacks.length > 0 && (
         <div className="absolute start-2 bottom-2 z-10 flex max-w-[calc(100%-2.5rem)] flex-wrap gap-1">
           {item.tech_stacks.slice(0, 4).map((tech) => (
@@ -1469,7 +1387,6 @@ function ProjectItemCover({
         </div>
       )}
 
-      {/* Menu "..." — pojok kanan bawah gambar, disembunyikan saat mode pilih. */}
       {!selectMode && (
         <div className="absolute end-2 bottom-2 z-10">
           <ProjectItemMenu loadingDetail={loadingDetail} onDelete={onDelete} onEdit={onEdit} />
@@ -1479,8 +1396,6 @@ function ProjectItemCover({
   );
 }
 
-/** Kartu proyek (mode Card): cover di atas menempel (sticky) dan konten di
-    bawahnya bisa discroll di dalam kartu. */
 function ProjectCardItem({
   item,
   isMobile,
@@ -1539,8 +1454,6 @@ function ProjectCardItem({
   );
 }
 
-/** Baris proyek (mode ListBulletIcon): kartu dengan gambar lebih lebar, badge &
-    tech stack sama seperti di kartu. */
 function ProjectListItem({
   item,
   isMobile,
@@ -1583,7 +1496,6 @@ function ProjectListItem({
       }
       enabled={isMobile}
     >
-      {/* Kartu memanjang ke samping: cover di kiri, konten di kanan. */}
       <div className="group flex h-36 flex-row overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm">
         <ProjectItemCover
           className="h-full w-40 sm:w-48"
@@ -1601,11 +1513,6 @@ function ProjectListItem({
   );
 }
 
-/**
- * Bersihkan HTML blok satu baris (Heading): buang <br> dan blok <p>/<div> yang
- * membuat teks turun ke baris berikutnya, dan pastikan teks tetap berada di
- * dalam tag heading (kalau dulu pernah terketik di luarnya).
- */
 function sanitizeSingleLineHtml(html: string): string {
   let clean = html
     .replace(/<br\s*\/?>/gi, " ")
@@ -1654,10 +1561,7 @@ function RichTextBlock({
   useEffect(() => {
     const el = editableRef.current;
     if (!el) return;
-    // Always seed the DOM from `value` on mount (fixes empty blocks when
-    // editing an existing project) and when the value changes externally.
-    // Untuk blok satu baris (Heading), bersihkan HTML dulu agar tidak ada
-    // <br>/blok yang membuat teks turun ke baris berikutnya.
+    // Always seed the DOM from `value` on mount, otherwise existing blocks render empty.
     const seed = singleLine ? sanitizeSingleLineHtml(value) : value;
     if (seed !== el.innerHTML) {
       el.innerHTML = seed;
@@ -1665,15 +1569,12 @@ function RichTextBlock({
     lastValue.current = seed;
   }, [value, singleLine]);
 
-  // Newly added blocks / click-to-type: put the caret inside the block so the
-  // user can start typing right away.
   useEffect(() => {
     if (!autoFocus) return;
     const el = editableRef.current;
     if (!el) return;
     el.focus();
-    // Letakkan kursor di dalam elemen heading (h1/h2/h3) jika ada, supaya
-    // teks yang diketik tidak keluar dari tag heading (menjadi baris kedua).
+    // Kursor harus di dalam tag heading, kalau tidak teks keluar jadi baris kedua.
     const inner = el.querySelector("h1,h2,h3") ?? el;
     const range = document.createRange();
     range.selectNodeContents(inner);
@@ -1689,9 +1590,7 @@ function RichTextBlock({
     const el = editableRef.current;
     if (!el) return;
     if (singleLine) {
-      // Jaga blok satu baris tetap bersih: buang <br>/blok yang mungkin
-      // terbentuk lewat keyboard mobile/paste. Hanya tulis ulang DOM kalau
-      // berubah, supaya kursor tidak melompat saat mengetik normal.
+      // Tulis ulang DOM hanya kalau berubah, supaya kursor tidak melompat.
       const cleaned = sanitizeSingleLineHtml(el.innerHTML);
       if (cleaned !== el.innerHTML) el.innerHTML = cleaned;
     }
@@ -1708,7 +1607,6 @@ function RichTextBlock({
       setTools(null);
       return;
     }
-    // Selection range inside this block -> float the toolbar above the text.
     if (sel && sel.rangeCount > 0 && !sel.isCollapsed && el.contains(sel.anchorNode)) {
       const range = sel.getRangeAt(0);
       savedRange.current = range.cloneRange();
@@ -1717,8 +1615,6 @@ function RichTextBlock({
       setTools({ top: rect.top - containerRect.top - 44, left: rect.left - containerRect.left });
       return;
     }
-    // Tanpa seleksi teks aktif, sembunyikan toolbar — toolbar hanya muncul saat
-    // huruf/teks sedang diseleksi.
     if (tools !== "anchor") setTools(null);
   }
 
@@ -1732,8 +1628,6 @@ function RichTextBlock({
     return () => document.removeEventListener("selectionchange", handler);
   }, [showTools]);
 
-  // Setiap toolbar ditutup, kembalikan ke tampilan awal (BoldIcon/ItalicIcon/dll.)
-  // agar saat dibuka lagi, tombol `>`/`<` mulai dari posisi semula.
   useEffect(() => {
     if (!tools) setToolsExpanded(false);
   }, [tools]);
@@ -1783,7 +1677,6 @@ function RichTextBlock({
       <div
         className={cn(
           className,
-          // Teks panjang (termasuk URL/kata tanpa spasi) otomatis turun ke baris berikutnya.
           "min-w-0 max-w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] outline-none [&_a]:text-primary [&_a]:underline [&_b]:font-bold [&_em]:italic [&_strong]:font-bold [&_u]:underline [&_ol]:list-decimal [&_ol]:ps-6 [&_ul]:list-disc [&_ul]:ps-6",
         )}
         contentEditable
@@ -1792,10 +1685,7 @@ function RichTextBlock({
         }}
         onInput={emit}
         onKeyDown={(event) => {
-          // Heading satu baris: Enter tidak boleh membuat baris baru.
           if (singleLine && event.key === "Enter") event.preventDefault();
-          // Format (BoldIcon/ItalicIcon/dll.) hanya untuk blok Teks — pintasan
-          // Ctrl/Cmd+B/I/U dimatikan di Heading.
           if (singleLine && (event.ctrlKey || event.metaKey)) {
             const key = event.key.toLowerCase();
             if (key === "b" || key === "i" || key === "u") event.preventDefault();
@@ -1804,8 +1694,6 @@ function RichTextBlock({
         onKeyUp={refreshTools}
         onMouseUp={refreshTools}
         onPaste={(event) => {
-          // Paste di Heading disisipkan sebagai teks biasa satu baris:
-          // tanpa format dan tanpa baris baru.
           if (!singleLine) return;
           event.preventDefault();
           const text = event.clipboardData
@@ -1905,11 +1793,6 @@ function RichTextBlock({
   );
 }
 
-/**
- * Blok Heading (Heading 1). Satu baris — Enter tidak membuat baris
- * baru, tanpa toolbar format (BoldIcon/ItalicIcon/dll. pindah ke blok Teks), dan teks
- * panjang tetap membungkus ke bawah.
- */
 function HeadingBlock({
   value,
   onChange,
@@ -1982,11 +1865,9 @@ function ContentEditor({
     onChange(blocks.filter((_, i) => i !== index));
   }
 
-  /** Append a block at the end of the canvas and focus/activate it. */
   function appendBlock(type: ProjectBlockType, block?: ProjectBlock) {
     const hasTitle = blocks.some((b) => b.type === "heading" && b.isTitle);
     let next = block ?? newBlock(type);
-    // Heading pertama yang ditambahkan otomatis menjadi judul proyek.
     if (type === "heading" && !hasTitle && !block) {
       next = { ...next, isTitle: true } as ProjectBlock;
     }
@@ -2398,7 +2279,6 @@ function CanvasGalleryBlock({
 
   return (
     <div className="flex items-stretch gap-2">
-      {/* Thumbnail galeri — scroll horizontal di sisi kiri blok. */}
       <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
         {block.images.map((image, index) => (
           <div className="relative w-40 shrink-0" key={index}>
@@ -2427,7 +2307,6 @@ function CanvasGalleryBlock({
         )}
       </div>
 
-      {/* Area tambah foto di sisi kanan blok. */}
       <div
         className={cn(
           "flex w-40 shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-4 text-center text-sm transition-colors",
@@ -2468,8 +2347,6 @@ function CanvasGalleryBlock({
   );
 }
 
-/** Sidebar kanan editor (desktop): panel data proyek (Category / Period /
-    Tech Stack) yang dibuka lewat tombol di dalam cover media. */
 function EditorSidebar({
   projectTab,
   editing,
@@ -2664,8 +2541,6 @@ function BlockMediaField({
   const [dragging, setDragging] = useState(false);
   const { t } = useLanguage();
 
-  // A freshly added media block opens the file picker immediately so the user
-  // can pick the image/video without an extra click.
   useEffect(() => {
     if (autoOpen && !value && inputRef.current) {
       inputRef.current.click();
@@ -2688,7 +2563,6 @@ function BlockMediaField({
       return;
     }
 
-    // Belum diunggah ke storage — hanya preview lokal; diunggah saat proyek disimpan.
     const url = URL.createObjectURL(file);
     registerLocalFile(url, file);
     onChange(url);
@@ -2856,8 +2730,6 @@ function BlockMediaField({
   );
 }
 
-/** Translucent status badge: green = published, orange = draft.
-    Posisinya diatur oleh wrapper (pojok kiri atas cover media). */
 function StatusBadge({ isPublished }: { isPublished: boolean }) {
   const { t } = useLanguage();
   return (

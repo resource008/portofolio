@@ -76,8 +76,6 @@ export function TechLogoPreview({
   }, [logo]);
 
   if (size === "sm") {
-    // Jangan render kotak kosong untuk skill tanpa logo — hanya tampilkan
-    // kotak jika logonya benar-benar ada, supaya tidak menghalangi teks.
     if (!logo || failed) return null;
 
     return (
@@ -124,7 +122,6 @@ function PhotoField({
 
   return (
     <Field>
-      {/* Frame foto: menampilkan foto terpilih di dalamnya */}
       <div className="flex h-48 w-full flex-col gap-3 rounded-lg border border-input bg-muted/20 p-3">
         <span className="font-medium text-foreground text-sm">{t("Foto")}</span>
 
@@ -186,7 +183,6 @@ function PhotoField({
   );
 }
 
-/** Field form pengalaman — dipakai di halaman tambah/edit experience. */
 export function ExperienceFields({
   editing,
   setEditing,

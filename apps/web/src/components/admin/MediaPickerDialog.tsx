@@ -23,23 +23,12 @@ import { EmptyBoxIllustration } from "@/components/EmptyBoxIllustration";
 interface MediaPickerDialogProps {
   open: boolean;
   kind: "image" | "file";
-  /** URL yang sedang dipakai (single) atau daftar URL yang sedang dipakai (multi). */
   current?: string | string[];
   scope?: string;
   onSelect?: (url: string) => void;
-  /**
-   * Mode multi-pilih: pengguna bisa menandai beberapa file sekaligus (dari
-   * riwayat upload maupun upload baru) lalu memakainya sekaligus lewat
-   * `onSelectMany`.
-   */
   multiple?: boolean;
   onSelectMany?: (urls: string[]) => void;
-  /**
-   * When provided, a newly chosen file is handed back instead of being
-   * uploaded right away, so callers can transform it (e.g. crop) first and
-   * upload only the result. Existing library files still go through
-   * `onSelect` with their URL.
-   */
+  /** When set, a new file is handed back un-uploaded (e.g. to crop first); library files still use `onSelect`. */
   onPickFile?: (file: File) => void;
   onClose: () => void;
 }
@@ -79,8 +68,7 @@ export default function MediaPickerDialog({
     enabled: open,
   });
 
-  // Refresh the history whenever the picker opens so the "Dipakai" badge
-  // reflects files that were saved since the last time it was shown.
+  // Refresh on open so the "Dipakai" badge reflects files saved since last shown.
   useEffect(() => {
     if (open) {
       queryClient.invalidateQueries({ queryKey: ["admin", "uploads"] });
@@ -159,7 +147,6 @@ export default function MediaPickerDialog({
   }
 
   function processFile(file: File) {
-    // Hand the raw file back when the caller needs to transform it first.
     if (onPickFile) {
       onPickFile(file);
       return;
@@ -201,7 +188,6 @@ export default function MediaPickerDialog({
     <Dialog
       onOpenChange={(next) => {
         if (next) return;
-        // Closing the preview returns to the file picker instead of closing the dialog.
         if (mode === "preview") {
           setMode("browse");
           setPreview(null);

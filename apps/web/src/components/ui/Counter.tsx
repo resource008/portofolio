@@ -1,10 +1,6 @@
 import { useEffect } from "react";
 import { motion, useSpring, useTransform, type MotionValue } from "motion/react";
 
-/**
- * Counter — diadaptasi dari React Bits (reactbits.dev/components/counter).
- * Tiap digit adalah kolom 0–9 yang bergulir ke angka baru dengan pegas.
- */
 function Digit({ place, value, height }: { place: number; value: number; height: number }) {
   const rounded = Math.floor(value / place);
   const spring = useSpring(rounded, { stiffness: 260, damping: 26 });

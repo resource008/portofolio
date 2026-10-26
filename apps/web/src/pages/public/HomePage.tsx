@@ -10,8 +10,7 @@ import { PublicHeader } from "@/components/public/PublicHeader";
 export default function HomePage() {
   const { hash } = useLocation();
 
-  // Datang dari halaman lain lewat dock (mis. "/#projects"): scroll ke section
-  // setelah konten dimuat — dicoba beberapa kali karena data diambil async.
+  // Dicoba beberapa kali karena data section diambil async.
   useEffect(() => {
     const id = hash.slice(1);
     if (!id) return;
@@ -36,8 +35,7 @@ export default function HomePage() {
         <ExperienceSection />
         <ContactSection />
       </main>
-      {/* Atribusi ilustrasi (wajib untuk aset gratis IconScout) di paling bawah
-          halaman; pb-28 memberi ruang agar tidak tertutup dock. */}
+      {/* Atribusi wajib untuk aset gratis IconScout; pb-28 memberi ruang agar tidak tertutup dock. */}
       <footer className="px-4 pt-8 pb-28 text-center text-muted-foreground text-xs sm:px-6">
         Ilustrasi oleh{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://iconscout.com/contributors/triple-t" rel="noopener noreferrer" target="_blank">

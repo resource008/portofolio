@@ -33,7 +33,6 @@ function initials(name: string): string {
     .join("");
 }
 
-/** Cuplikan pendek untuk daftar pesan — teks utuh tidak pernah ditampilkan di list. */
 function messagePreview(message: string, max = 90): string {
   const compact = message.trim().replace(/\s+/g, " ");
   if (compact.length <= max) return compact;

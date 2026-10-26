@@ -33,7 +33,6 @@ const directionMap: Record<
   top: "up",
 };
 
-/** True ketika drawer ini dirender di dalam drawer lain (nested drawer). */
 export function useDrawerNested(): boolean {
   return useContext(DrawerContext) != null;
 }
@@ -163,7 +162,6 @@ export function DrawerPopup({
   position?: DrawerPosition;
   variant?: "default" | "straight" | "inset";
   showBar?: boolean;
-  /** Cara drawer ini menampilkan nested drawer di bawahnya. */
   nestedVariant?: "stack" | "side";
   portalProps?: DrawerPrimitive.Portal.Props;
 }): React.ReactElement {

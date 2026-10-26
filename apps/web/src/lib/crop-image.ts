@@ -17,15 +17,12 @@ const MIME_EXTENSION: Record<string, string> = {
   "image/webp": "webp",
 };
 
-/** Maximum output dimension (longest edge) so cropped images stay small. */
 const MAX_DIMENSION = 2048;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image();
-    // The blob store is a different origin than the app. Without this the
-    // browser loads the image without CORS headers, which taints the canvas
-    // and makes `toBlob` throw a SecurityError.
+    // Blob store is cross-origin; without this the canvas is tainted and `toBlob` throws.
     image.crossOrigin = "anonymous";
     image.addEventListener("load", () => resolve(image));
     image.addEventListener("error", () =>
@@ -35,7 +32,6 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Whether any pixel is not fully opaque, i.e. the image needs an alpha channel. */
 function hasTransparency(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -48,13 +44,6 @@ function hasTransparency(
   return false;
 }
 
-/**
- * Crop an image (given natural-pixel area) into a Blob. The result is
- * downscaled to `maxDimension` (longest edge) and re-encoded as WebP so the
- * uploaded file is as small as possible — fewer bytes = faster loading.
- * Falls back to PNG only when transparency is required and WebP is
- * unavailable, and JPEG otherwise.
- */
 export async function cropImageToBlob(
   imageSrc: string,
   area: CropArea,

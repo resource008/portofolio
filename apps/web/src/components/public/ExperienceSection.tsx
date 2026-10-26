@@ -32,19 +32,11 @@ function SkillPill({ name }: { name: string }) {
   );
 }
 
-/** Rotasi & geser tiap foto agar tampak seperti lembaran yang ditumpuk acak. */
 const PHOTO_TILTS = ["-rotate-3 -translate-x-6", "rotate-2", "rotate-6 translate-x-6"];
 
-/** Jarak (px) minimal agar gerakan dianggap tarikan, bukan klik. */
 const DRAG_THRESHOLD = 6;
-/** Jarak tarik (px) yang membuat foto "dikeluarkan" dan langsung dipratinjau. */
 const PULL_OUT_DISTANCE = 120;
 
-/**
- * Foto di folder yang bisa ditarik: mengikuti pointer dengan sedikit miring,
- * lalu memantul kembali ke folder saat dilepas. Tarikan cukup jauh membuka
- * pratinjau; klik biasa tetap membuka pratinjau seperti sebelumnya.
- */
 function DraggablePhoto({
   className,
   hidden,
@@ -97,8 +89,7 @@ function DraggablePhoto({
 
   const style: React.CSSProperties | undefined = offset
     ? {
-        // Pakai `transform` (bukan `translate`/`rotate`) sehingga tilt Tailwind
-        // yang memakai properti individual tetap berlaku; tarikan ditumpuk di atasnya.
+        // Pakai `transform` (bukan `translate`/`rotate`) agar tilt Tailwind tetap berlaku.
         transform: `translate(${offset.x}px, ${offset.y}px) rotate(${Math.max(-15, Math.min(15, offset.x / 12))}deg) scale(1.08)`,
       }
     : undefined;
@@ -108,12 +99,10 @@ function DraggablePhoto({
       aria-label={`Lihat foto ${index + 1}`}
       className={cn(
         "absolute top-0 h-32 max-w-[70%] touch-none select-none overflow-hidden rounded-md border-4 border-white bg-white shadow-md transition-[transform,translate,rotate,scale,opacity,box-shadow] duration-300 ease-out hover:scale-105 active:scale-95 group-hover:-translate-y-1.5",
-        // Saat ditarik: ikuti pointer tanpa jeda, di atas foto lain, bayangan lebih tebal.
         dragging
           ? "z-20 cursor-grabbing shadow-2xl duration-0"
           : "cursor-grab ease-[cubic-bezier(0.34,1.56,0.64,1)] duration-500",
         className,
-        // Foto yang sedang dipratinjau "keluar" dari folder.
         hidden && "opacity-0",
       )}
       onClick={(event) => {
@@ -143,11 +132,6 @@ function DraggablePhoto({
   );
 }
 
-/**
- * Satu entri pengalaman berbentuk folder: foto-foto menyembul dari dalam
- * folder (kosong bila tidak ada foto), sampul depan berisi logo, posisi &
- * perusahaan, deskripsi & tech stack. Warna mengikuti tema (terang/gelap).
- */
 function ExperienceRow({ item }: { item: Experience }) {
   const photos = item.photos.slice(0, PHOTO_TILTS.length);
   const hasPhotos = photos.length > 0;
@@ -157,7 +141,6 @@ function ExperienceRow({ item }: { item: Experience }) {
   return (
     <article>
       <div className={cn("group relative", hasPhotos ? "pt-20" : "pt-3")}>
-        {/* Tab folder di kiri atas. */}
         <div
           aria-hidden
           className={cn(
@@ -165,7 +148,6 @@ function ExperienceRow({ item }: { item: Experience }) {
             hasPhotos ? "top-17" : "top-0",
           )}
         />
-        {/* Lembar belakang folder. */}
         <div
           aria-hidden
           className={cn(
@@ -173,7 +155,6 @@ function ExperienceRow({ item }: { item: Experience }) {
             hasPhotos ? "top-20" : "top-3",
           )}
         />
-        {/* Foto yang menyembul dari dalam folder. */}
         {hasPhotos ? (
           <div className="absolute inset-x-0 top-0 flex h-32 justify-center">
             {photos.map((photo, index) => (
@@ -191,7 +172,6 @@ function ExperienceRow({ item }: { item: Experience }) {
             ))}
           </div>
         ) : null}
-        {/* Sampul depan: logo, posisi, perusahaan, deskripsi & tech stack. */}
         <div className="relative mt-6 space-y-4 rounded-xl border border-border/60 bg-card p-5 text-card-foreground shadow-md sm:p-6">
           <div className="flex items-center gap-4">
             <div className="size-14 shrink-0 overflow-hidden rounded-xl border bg-white shadow-sm">
@@ -249,12 +229,10 @@ export function ExperienceSection() {
     header?.description ||
     "Pengalaman profesional, magang, dan kepemimpinan organisasi dalam membangun produk digital yang berdampak nyata.";
 
-  // Saat kosong: tampilkan hanya logo + judul di tengah, tanpa background/frame.
   const isEmpty = items.length === 0;
 
   return (
     <>
-      {/* Section 1 — Header: logo, judul, dan deskripsi. */}
       <section
         className={cn(
           "scroll-mt-[7rem] py-16 md:py-24",
@@ -267,7 +245,6 @@ export function ExperienceSection() {
             ref={revealRef}
             className={cn(
               "flex flex-col gap-6",
-              // Rata kiri sejajar Hero & Kontak; saat kosong tetap di tengah.
               isEmpty ? "mx-auto max-w-2xl items-center text-center" : "items-start text-left",
             )}
           >
@@ -291,7 +268,6 @@ export function ExperienceSection() {
         </div>
       </section>
 
-      {/* Section 2 — Kartu pengalaman yang muncul saat discroll, hanya saat ada item. */}
       {!isEmpty ? (
         <section className="relative bg-muted/20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">

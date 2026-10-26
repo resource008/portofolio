@@ -95,16 +95,12 @@ export default function AnnouncementManager({ className }: { className?: string 
   const [pendingDelete, setPendingDelete] = useState<ProjectAnnouncement | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  // Pada layar mobile, tombol "Ubah urutan" mengaktifkan drag handle; di
-  // desktop drag handle selalu tersedia.
   const isMobile = useMediaQuery("max-md");
 
   useEffect(() => {
     if (!isMobile) setReorderMode(false);
   }, [isMobile]);
 
-  // Form tampil inline di halaman; di mobile (posisinya di bawah daftar)
-  // otomatis digulir ke panel form saat tambah/edit dibuka.
   const formPanelRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (!editing || !isMobile) return;
@@ -280,7 +276,6 @@ export default function AnnouncementManager({ className }: { className?: string 
   return (
     <>
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        {/* Kolom konten — daftar announcement sebagai card. */}
         <div className={cn("space-y-3", className)}>
           {isMobile && items.length > 1 && (
             <div className="flex justify-end">
@@ -299,7 +294,6 @@ export default function AnnouncementManager({ className }: { className?: string 
           {listContent()}
         </div>
 
-        {/* Sidebar sticky di kanan — menempel saat scroll, tidak float. */}
         <aside className="lg:sticky lg:top-[78px] lg:self-start" ref={formPanelRef}>
           <Card>
             <CardPanel className="space-y-4">
@@ -419,11 +413,9 @@ function AnnouncementFormPanel({
   projects: Project[];
   onChange: (form: AnnouncementForm) => void;
 }) {
-  // Hanya postingan yang sudah dipublish yang bisa dipilih/ditampilkan.
   const { t } = useLanguage();
   const publishedProjects = projects.filter((project) => project.is_published);
-  // Pratinjau mode "Otomatis": seluruh postingan yang dipublikasikan (urutan sama
-  // dengan API: created_at DESC, id DESC).
+  // Urutan sama dengan API: created_at DESC, id DESC.
   const autoPreview = [...publishedProjects].sort((a, b) => {
     const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
     const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
@@ -436,8 +428,7 @@ function AnnouncementFormPanel({
       className="flex flex-col gap-5"
       initial="hidden"
       onSubmit={(e) => {
-        // Tombol Simpan ada di footer drawer; cukup cegah submit bawaan
-        // (mis. Enter di dalam field) agar tidak me-reload halaman.
+        // Cegah submit bawaan (mis. Enter di field) agar halaman tidak reload.
         e.preventDefault();
       }}
       variants={ANNOUNCEMENT_FORM_VARIANTS}

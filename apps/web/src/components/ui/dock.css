@@ -67,7 +67,6 @@
   box-shadow: 0 4px 10px -6px color-mix(in oklab, var(--foreground) 30%, transparent);
 }
 
-/* Separator between groups of items. */
 .dock-separator {
   align-self: stretch;
   width: 1px;
@@ -75,7 +74,6 @@
   background-color: color-mix(in oklab, var(--foreground) 20%, transparent);
 }
 
-/* "Running" indicator dot under an active item. */
 .dock-indicator {
   position: absolute;
   bottom: -0.45rem;
@@ -109,7 +107,6 @@
   box-shadow: 0 0 0 2px var(--background);
 }
 
-/* Context menu (right-click / long press). */
 .dock-menu-anchor {
   position: absolute;
   bottom: calc(100% + 0.75rem);

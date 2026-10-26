@@ -17,9 +17,7 @@ export type DockMenuEntry =
       separator?: false;
       label: React.ReactNode;
       onClick?: () => void;
-      /** Shows a check mark in front of the label. */
       checked?: boolean;
-      /** Nested submenu, opened on hover. */
       items?: DockMenuEntry[];
     };
 
@@ -29,15 +27,10 @@ export type DockAppItem = {
   label: React.ReactNode;
   onClick?: () => void;
   className?: string;
-  /** Custom interactive content rendered in place of `icon` (e.g. a menu trigger). */
   content?: React.ReactNode;
-  /** Shows the "running" indicator dot under the item. */
   active?: boolean;
-  /** Notification badge on the item's corner. */
   badge?: number | string;
-  /** Context menu, opened with right-click (or long press on touch). */
   menu?: DockMenuEntry[];
-  /** Open `menu` on a normal click/tap too (e.g. an overflow "…" item). */
   menuOnClick?: boolean;
 };
 
@@ -52,7 +45,6 @@ export type DockProps = {
   dockHeight?: number;
   magnification?: number;
   spring?: SpringOptions;
-  /** Animate the items in from below on mount. */
   animateIn?: boolean;
 };
 
@@ -110,8 +102,7 @@ function DockItem({
   );
   const size = useSpring(targetSize, spring);
 
-  // Waktu menu terakhir ditutup: tap pada trigger memicu pointerdown (menutup
-  // menu) lalu click — tanpa ini menu langsung terbuka lagi.
+  // Tap pada trigger memicu pointerdown (menutup) lalu click; tanpa ini menu terbuka lagi.
   const closedAt = useRef(0);
   const closeMenu = () => {
     closedAt.current = Date.now();

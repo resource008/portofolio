@@ -23,12 +23,6 @@ function ResultThumb({ project }: { project: Project }) {
   );
 }
 
-/**
- * Pencarian proyek di header: ikon kaca pembesar → panel berisi kolom
- * pencarian dan daftar hasil. Memilih hasil membuka drawer proyek di halaman
- * yang sedang dibuka. Pintasan: "/" atau Ctrl/⌘+K. Navigasi hasil dengan
- * panah atas/bawah, Enter untuk membuka.
- */
 export function HeaderSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -36,7 +30,6 @@ export function HeaderSearch() {
   const [selected, setSelected] = useState<Project | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
-  // Data proyek baru diambil saat panel pertama kali dibuka (berbagi cache dengan /projects).
   const { data, isLoading } = useQuery({
     queryKey: ["home", "projects"],
     queryFn: () => apiGet<Project[]>("/home/projects"),
@@ -45,7 +38,6 @@ export function HeaderSearch() {
 
   const hasQuery = query.trim() !== "";
 
-  // Hasil hanya muncul setelah pengguna mengetik; tanpa kata kunci panel hanya berisi kolom pencarian.
   const results = useMemo(
     () => (hasQuery ? (data ?? []).filter((project) => matchesProject(project, query)) : []),
     [data, query, hasQuery],
@@ -55,7 +47,6 @@ export function HeaderSearch() {
     setActive(0);
   }, [query]);
 
-  // Pintasan keyboard global untuk membuka pencarian.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
@@ -120,8 +111,7 @@ export function HeaderSearch() {
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={onInputKeyDown}
                 placeholder="Cari judul, kategori, atau teknologi…"
-                // type="text" (bukan "search") agar tidak ada tombol × bawaan browser
-                // yang bertumpuk dengan tombol tutup panel.
+                // type="text" (bukan "search") agar tombol × bawaan browser tidak bertumpuk dengan tombol tutup.
                 enterKeyHint="search"
                 type="text"
                 value={query}

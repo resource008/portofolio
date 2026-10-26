@@ -6,7 +6,6 @@ import { resolveTechLogo } from "@/lib/tech-logo";
 import { Badge } from "@/components/ui/badge";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 
-/** Tech stack di homepage hanya menampilkan logonya saja (tanpa nama). */
 function TechLogoOnly({ name }: { name: string }) {
   const logo = resolveTechLogo(name);
   const [failed, setFailed] = useState(false);
@@ -27,7 +26,6 @@ function TechLogoOnly({ name }: { name: string }) {
   );
 }
 
-/** Cover media: gambar utama, atau video bila tidak ada gambar. */
 function ProjectCover({ media }: { media: ProjectMedia[] }) {
   const cover = media.find((item) => item.type === "image") ?? media[0];
   if (cover?.type === "video") {
@@ -50,10 +48,6 @@ function ProjectCover({ media }: { media: ProjectMedia[] }) {
   );
 }
 
-/**
- * Kartu proyek. Bila `onOpen` diberikan, klik biasa membuka detail lewat
- * callback (mis. drawer); ctrl/cmd-klik tetap membuka halaman detail.
- */
 export function ProjectCard({
   project,
   onOpen,

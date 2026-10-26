@@ -1,11 +1,6 @@
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
-/**
- * Layar loading satu-satunya untuk route & cek sesi, supaya urutan
- * fallback router → cek sesi → layout tidak berkedip ganti latar/posisi.
- * `admin` memakai latar sidebar agar menyatu dengan AdminLayout (bg-sidebar).
- */
 export function PageLoader({ admin = false }: { admin?: boolean }) {
   return (
     <div

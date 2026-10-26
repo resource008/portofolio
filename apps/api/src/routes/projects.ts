@@ -80,7 +80,6 @@ async function uniqueSlug(title: string): Promise<string> {
   }
 }
 
-// 6.1 Daftar Proyek & Postingan (Public)
 projectRoutes.get("/projects", async (c) => {
   const search = (c.req.query("search") ?? "").trim();
   const category = (c.req.query("category") ?? "").trim();
@@ -117,13 +116,8 @@ projectRoutes.get("/projects", async (c) => {
   });
 });
 
-/** Panjang maksimum ringkasan isi di kartu proyek. */
 const EXCERPT_LENGTH = 140;
 
-/**
- * Ringkasan singkat isi proyek untuk kartu: teks polos dari blok Teks pertama
- * (atau Heading non-judul bila tidak ada), dipotong ke EXCERPT_LENGTH karakter.
- */
 function buildExcerpt(content: ProjectBlock[]): string | null {
   const block =
     content.find((b) => b.type === "text") ??
@@ -143,9 +137,6 @@ function buildExcerpt(content: ProjectBlock[]): string | null {
   return text.length > EXCERPT_LENGTH ? `${text.slice(0, EXCERPT_LENGTH).trimEnd()}…` : text;
 }
 
-// 6.1b Daftar semua proyek yang sudah terbit (tanpa draft) — dipakai halaman
-// /projects di web public. Diurutkan dari yang paling baru. Tiap item
-// menyertakan `excerpt` (ringkasan isi) untuk kartu.
 projectRoutes.get("/home/projects", async (c) => {
   const rows = await sql<ProjectDetailRow[]>`
     SELECT ${DETAIL_COLUMNS} FROM projects
@@ -158,14 +149,12 @@ projectRoutes.get("/home/projects", async (c) => {
   );
 });
 
-// 6.2 Detail Proyek / Postingan (Public)
 projectRoutes.get("/projects/:slug", async (c) => {
   const project = await fetchProjectBySlug(c.req.param("slug"));
   if (!project) return fail(c, "Proyek tidak ditemukan.", 404);
   return ok(c, project);
 });
 
-// Admin: daftar semua proyek (termasuk draft).
 projectRoutes.get("/admin/projects", requireAdmin, async (c) => {
   const rows = await sql<ProjectRow[]>`
     SELECT ${LIST_COLUMNS} FROM projects
@@ -174,7 +163,6 @@ projectRoutes.get("/admin/projects", requireAdmin, async (c) => {
   return ok(c, rows);
 });
 
-// Admin: detail proyek berdasarkan id (termasuk draft).
 projectRoutes.get("/admin/projects/:id", requireAdmin, async (c) => {
   const id = Number(c.req.param("id"));
   const project = await fetchProjectById(id);
@@ -245,7 +233,6 @@ const projectSchema = z.object({
   content: z.array(blockSchema).optional().default([]),
 });
 
-// 6.3 Tambah Proyek (Admin)
 projectRoutes.post(
   "/admin/projects",
   requireAdmin,
@@ -276,7 +263,6 @@ projectRoutes.post(
   },
 );
 
-// 6.3 Edit Proyek (Admin)
 projectRoutes.put(
   "/admin/projects/:id",
   requireAdmin,
@@ -308,7 +294,6 @@ projectRoutes.put(
   },
 );
 
-// 6.4 Hapus Proyek (Admin)
 projectRoutes.delete("/admin/projects/:id", requireAdmin, async (c) => {
   const id = Number(c.req.param("id"));
   await sql`DELETE FROM projects WHERE id = ${id}`;

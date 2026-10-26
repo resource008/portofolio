@@ -1,12 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-/**
- * Horizontal scroller:
- * - hidden scrollbar
- * - mouse wheel scrolls horizontally
- * - click-and-drag to scroll
- */
 export function HScroll({
   className,
   children,

@@ -65,7 +65,6 @@ export default function ExperienceSection({
   const [pendingDelete, setPendingDelete] = useState<Experience | null>(null);
   const [preview, setPreview] = useState<{ photos: string[]; index: number } | null>(null);
   const isMobile = useIsMobile();
-  // Id card pengalaman yang dropdown detailnya sedang terbuka.
   const [expandedIds, setExpandedIds] = useState<Experience["id"][]>([]);
   const toggleExpanded = (id: Experience["id"]) =>
     setExpandedIds((prev) =>
@@ -118,7 +117,6 @@ export default function ExperienceSection({
           </div>
         </Card>
       ) : items.length === 0 ? (
-        // Empty state tanpa background — logo + judul langsung di tengah.
         <Empty>
           <EmptyHeader>
             <EmptyMedia>
@@ -153,16 +151,12 @@ export default function ExperienceSection({
                   }
                   enabled={isMobile}
                 >
-                {/* Card berbentuk dropdown: klik info pengalaman untuk
-                    menampilkan deskripsi, tech stack & foto di dalam card ini. */}
                 <Accordion
                   onValueChange={() => toggleExpanded(item.id)}
                   value={expandedIds.includes(item.id) ? ["open"] : []}
                 >
                 <AccordionItem className="border-b-0" value="open">
                 <div className="flex items-center gap-2 p-3">
-                  {/* Indikator bawaan disembunyikan; chevron dipasang di ujung
-                      kanan setelah tombol Edit & Hapus. */}
                   <div className="min-w-0 flex-1">
                   <AccordionTrigger
                     className="min-w-0 items-center gap-3 py-0 font-normal disabled:opacity-100"
@@ -294,7 +288,6 @@ export default function ExperienceSection({
           ))}
         </div>
       )}
-      {/* FAB — tombol tambah melayang di pojok kanan bawah. */}
       <Button
         aria-label={t("Tambah pengalaman")}
         className="fixed right-6 bottom-6 z-40 size-16 sm:size-16 rounded-full shadow-lg before:rounded-full"
