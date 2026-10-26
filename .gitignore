@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+out/
+coverage/
+.vite/
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Turbo
+.turbo/
+
+# TypeScript incremental cache
+*.tsbuildinfo
+
+# Terraform (state berisi secret)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Tool editor pribadi
+.opencode/
+
+# Dokumentasi API, spesifikasi OpenAPI + viewer-nya (hanya lokal)
+/openapi.yaml
+/index.html
+/API_DOCUMENTATION.md

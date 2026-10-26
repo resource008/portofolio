@@ -1,0 +1,177 @@
+.dock-outer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.dock-panel {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: flex-end;
+  width: fit-content;
+  gap: 0.6rem;
+  border-radius: 1.25rem;
+  background-color: color-mix(in oklab, var(--background) 80%, transparent);
+  border: 1px solid var(--border);
+  padding: 0 0.6rem 0.6rem;
+  box-shadow: 0 10px 30px -10px color-mix(in oklab, var(--foreground) 25%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.dock-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background-color: var(--muted);
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
+  outline: none;
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.dock-item--active {
+  color: var(--primary);
+  border-color: color-mix(in oklab, var(--primary) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--primary) 35%, transparent);
+}
+
+.dock-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dock-label {
+  position: absolute;
+  top: -1.75rem;
+  left: 50%;
+  width: fit-content;
+  white-space: pre;
+  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  background-color: color-mix(in oklab, var(--background) 92%, transparent);
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  color: var(--foreground);
+  box-shadow: 0 4px 10px -6px color-mix(in oklab, var(--foreground) 30%, transparent);
+}
+
+/* Separator between groups of items. */
+.dock-separator {
+  align-self: stretch;
+  width: 1px;
+  margin: 0.6rem 0.25rem;
+  background-color: color-mix(in oklab, var(--foreground) 20%, transparent);
+}
+
+/* "Running" indicator dot under an active item. */
+.dock-indicator {
+  position: absolute;
+  bottom: -0.45rem;
+  left: 50%;
+  width: 0.25rem;
+  height: 0.25rem;
+  border-radius: 9999px;
+  background-color: var(--foreground);
+  transform: translateX(-50%);
+}
+
+.dock-item--running {
+  color: var(--foreground);
+}
+
+.dock-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+  z-index: 1;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.3rem;
+  border-radius: 9999px;
+  background-color: #ef4444;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  line-height: 1.1rem;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--background);
+}
+
+/* Context menu (right-click / long press). */
+.dock-menu-anchor {
+  position: absolute;
+  bottom: calc(100% + 0.75rem);
+  left: 50%;
+  z-index: 60;
+  transform: translateX(-50%);
+}
+
+.dock-menu {
+  min-width: 11rem;
+  padding: 0.3rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background-color: color-mix(in oklab, var(--background) 92%, transparent);
+  box-shadow: 0 12px 30px -12px color-mix(in oklab, var(--foreground) 35%, transparent);
+  backdrop-filter: blur(16px);
+}
+
+.dock-menu--sub {
+  position: absolute;
+  top: -0.3rem;
+  left: calc(100% + 0.25rem);
+}
+
+.dock-menu-row {
+  position: relative;
+}
+
+.dock-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--foreground);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dock-menu-item:hover,
+.dock-menu-item:focus-visible {
+  background-color: var(--accent);
+  outline: none;
+}
+
+.dock-menu-check {
+  width: 0.9rem;
+  font-size: 0.75rem;
+}
+
+.dock-menu-label {
+  flex: 1;
+}
+
+.dock-menu-arrow {
+  color: var(--muted-foreground);
+}
+
+.dock-menu-separator {
+  height: 1px;
+  margin: 0.25rem 0.4rem;
+  background-color: var(--border);
+}
