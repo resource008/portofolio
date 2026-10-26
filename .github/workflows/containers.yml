@@ -1,0 +1,102 @@
+name: containers
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: containers-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: portofolio
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build api image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          tags: portofolio-api:ci
+          load: true
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+
+      - name: Build web image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          tags: portofolio-web:ci
+          load: true
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,scope=web,mode=max
+
+      - name: Image sizes
+        run: docker image ls --format '{{.Repository}}:{{.Tag}}  {{.Size}}' | grep portofolio
+
+      - name: Run api
+        run: |
+          # Throwaway values: this job only checks that the image boots, migrates and serves /api/health.
+          docker run -d --name api --network host \
+            -e NODE_ENV=production \
+            -e DATABASE_URL=postgres://app:app@localhost:5432/portofolio \
+            -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+            -e BETTER_AUTH_URL=http://localhost:3001 \
+            -e WEB_ORIGIN=http://localhost:8080 \
+            -e ADMIN_GITHUB_USERNAMES=ci-dummy \
+            portofolio-api:ci
+
+      - name: Check api health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3001/api/health; then echo; exit 0; fi
+            sleep 1
+          done
+          docker logs api
+          exit 1
+
+      - name: Check api runs as non-root
+        run: test "$(docker exec api id -u)" != "0"
+
+      - name: Run web
+        run: docker run -d --name web -p 8080:80 portofolio-web:ci
+
+      - name: Check web SPA fallback and asset caching
+        run: |
+          sleep 2
+          curl -fsS http://localhost:8080/ | grep -q '<div id="root"'
+          # A deep link must serve index.html (200), not 404, so refreshing a sub-route works.
+          curl -fsS http://localhost:8080/projects/does-not-exist | grep -q '<div id="root"'
+          asset=$(curl -fsS http://localhost:8080/ | grep -oE '/assets/[^"]+\.js' | head -1)
+          curl -fsSI "http://localhost:8080$asset" | grep -qi 'cache-control: .*immutable'
+
+      - name: Container logs
+        if: always()
+        run: |
+          docker logs api 2>&1 | tail -50 || true
+          docker logs web 2>&1 | tail -20 || true
