@@ -181,7 +181,6 @@ export function useDashboardTransition({
       topbarChrome: Array.from(root.querySelectorAll<HTMLElement>("[data-topbar-chrome]")),
       sidebarFrame: root.querySelector<HTMLElement>('[data-slot="sidebar-inner"]'),
       contentFrame: root.querySelector<HTMLElement>("[data-transition-frame]"),
-      // Lebar harus > 0: label tersembunyi saat sidebar diciutkan tidak boleh ikut dianimasikan.
       sidebarItems: Array.from(root.querySelectorAll<HTMLElement>("[data-sidebar-anim]")).filter(
         (el) => el.offsetWidth > 0,
       ),
