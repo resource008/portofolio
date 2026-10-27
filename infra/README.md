@@ -53,3 +53,14 @@ pnpm dev:secrets   # = infisical run --env=dev -- turbo run dev
 ```
 
 Turbo berjalan dalam strict env mode, jadi setiap env var yang dipakai `dev` harus terdaftar di `passThroughEnv` pada `turbo.json`.
+
+## Override dependency (pnpm.overrides)
+
+Tambalan sementara untuk temuan Trivy. Hapus begitu paket induknya memakai versi yang sudah diperbaiki.
+
+| Override | Alasan |
+|---|---|
+| `source-map-js` → `^1.2.2` | CVE-2026-93749 lewat `postcss` (tsup) |
+| `@vercel/cli-config>zod` → `^4.6.7` | `@vercel/cli-config` (via `@vercel/blob` → `@vercel/oidc`) mengunci `zod@4.1.11`, kena CVE-2023-54404 |
+
+`.npmrc` memakai `auto-install-peers=false` supaya peer opsional yang tidak dipakai (mis. `next` milik `better-auth`) tidak ikut terpasang. Peer wajib ditulis eksplisit, contohnya `react-is` untuk `recharts` di `apps/web`.
