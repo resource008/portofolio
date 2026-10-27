@@ -84,7 +84,10 @@ jobs:
         run: test "$(docker exec api id -u)" != "0"
 
       - name: Run web
-        run: docker run -d --name web -p 8080:80 portofolio-web:ci
+        run: docker run -d --name web -p 8080:8080 portofolio-web:ci
+
+      - name: Check web runs as non-root
+        run: test "$(docker exec web id -u)" != "0"
 
       - name: Check web SPA fallback and asset caching
         run: |
