@@ -7,7 +7,23 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "PORT",
+        "NODE_ENV",
+        "DATABASE_URL",
+        "WEB_ORIGIN",
+        "BETTER_AUTH_SECRET",
+        "BETTER_AUTH_URL",
+        "GITHUB_CLIENT_ID",
+        "GITHUB_CLIENT_SECRET",
+        "ADMIN_GITHUB_USERNAMES",
+        "BLOB_READ_WRITE_TOKEN",
+        "STORAGE_LIMIT_MB",
+        "TRUST_PROXY",
+        "MIGRATIONS_DIR",
+        "VITE_API_URL"
+      ]
     },
     "lint": {},
     "typecheck": {}
