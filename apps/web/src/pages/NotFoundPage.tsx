@@ -36,7 +36,6 @@ export default function NotFoundPage({
         </EmptyContent>
       </Empty>
 
-      {/* Atribusi animasi 404 (aset gratis LottieFiles). */}
       <p className="self-end text-center text-muted-foreground text-xs">
         Ilustrasi Oleh{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://lottiefiles.com/animoox" rel="noopener noreferrer" target="_blank">

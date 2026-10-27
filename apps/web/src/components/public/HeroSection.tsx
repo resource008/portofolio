@@ -214,7 +214,6 @@ function TickerMessage({
       const measure = () => {
         const cs = window.getComputedStyle(strip);
         const inner = strip.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-        // 28 = ikon + gap di kiri, 36 = tombol "Lihat postingan" + gap.
         setMaxWidth(Math.max(80, inner - 28 - (item.project ? 36 : 0)));
       };
       const observer = new ResizeObserver(measure);

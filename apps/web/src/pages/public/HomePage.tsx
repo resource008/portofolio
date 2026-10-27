@@ -35,7 +35,6 @@ export default function HomePage() {
         <ExperienceSection />
         <ContactSection />
       </main>
-      {/* Atribusi wajib untuk aset gratis IconScout; pb-28 memberi ruang agar tidak tertutup dock. */}
       <footer className="px-4 pt-8 pb-28 text-center text-muted-foreground text-xs sm:px-6">
         Ilustrasi oleh{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://iconscout.com/contributors/triple-t" rel="noopener noreferrer" target="_blank">
