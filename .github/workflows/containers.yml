@@ -12,10 +12,17 @@ concurrency:
   group: containers-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  REGISTRY: ghcr.io/resource008
+
 jobs:
   smoke:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    # Push steps only run on main; fork PRs always get a read-only token regardless.
+    permissions:
+      contents: read
+      packages: write
 
     services:
       postgres:
@@ -42,6 +49,7 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           tags: portofolio-api:ci
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           load: true
           cache-from: type=gha,scope=api
           cache-to: type=gha,scope=api,mode=max
@@ -52,6 +60,7 @@ jobs:
           context: .
           file: apps/web/Dockerfile
           tags: portofolio-web:ci
+          labels: org.opencontainers.image.source=https://github.com/${{ github.repository }}
           load: true
           cache-from: type=gha,scope=web
           cache-to: type=gha,scope=web,mode=max
@@ -102,4 +111,23 @@ jobs:
         if: always()
         run: |
           docker logs api 2>&1 | tail -50 || true
-          docker logs web 2>&1 | tail -20 || true
+          docker logs web 2>&1 | tail -20 || tru
+          cm
+      # Publish the exact images that just passed the smoke test (build once, deploy many).
+      - name: Log in to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push images to GHCR
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          for app in api web; do
+            image="$REGISTRY/portofolio-$app:$GITHUB_SHA"
+            docker tag "portofolio-$app:ci" "$image"
+            docker push "$image"
+            echo "- \`$image\`" >> "$GITHUB_STEP_SUMMARY"
+          done
