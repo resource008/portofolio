@@ -1,0 +1,19 @@
+name: dependency-review
+
+# Compares dependencies between the PR base and head; only meaningful on pull requests.
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v5
+        with:
+          fail-on-severity: high
+          deny-licenses: AGPL-3.0, GPL-3.0
