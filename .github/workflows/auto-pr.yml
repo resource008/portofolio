@@ -1,0 +1,38 @@
+name: auto-pr
+
+# Opens the dev → main pull request on push if one isn't open yet. Merging stays manual.
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: auto-pr
+  cancel-in-progress: false
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Open PR dev → main if missing
+        run: |
+          ahead=$(gh api "repos/$GH_REPO/compare/main...dev" --jq .ahead_by)
+          if [ "$ahead" = "0" ]; then
+            echo "dev has no commits ahead of main; nothing to open."
+            exit 0
+          fi
+          existing=$(gh pr list --base main --head dev --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            echo "PR #$existing is already open; new commits appear there automatically."
+            exit 0
+          fi
+          gh pr create --base main --head dev \
+            --title "Merge dev into main" \
+            --body "Opened automatically on push to \`dev\`. Merge with **Create a merge commit** once all required checks pass."

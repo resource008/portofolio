@@ -54,6 +54,12 @@ pnpm dev:secrets   # = infisical run --env=dev -- turbo run dev
 
 Turbo berjalan dalam strict env mode, jadi setiap env var yang dipakai `dev` harus terdaftar di `passThroughEnv` pada `turbo.json`.
 
+### Verifikasi (2026-10-28)
+
+- Identity `k8s-prod` (Universal Auth, Viewer di `portofolio-app`) bisa membaca ke-6 secret `prod`; referensi `${POSTGRES_PASSWORD}` di `DATABASE_URL` ter-expand.
+- Identity yang sama ditolak (403) saat membaca `portofolio-ci`.
+- Identity `ci` ditunda ke Tahap 6, saat isi `portofolio-ci` sudah jelas. Identity `infra` dibuat di Tahap 7.
+
 ## Override dependency (pnpm.overrides)
 
 Tambalan sementara untuk temuan Trivy. Hapus begitu paket induknya memakai versi yang sudah diperbaiki.

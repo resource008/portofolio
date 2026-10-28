@@ -1,9 +1,9 @@
 name: ci
 
+# Runs once per commit on dev; the PR to main reuses these results.
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches: [dev]
 
 permissions:
   contents: read

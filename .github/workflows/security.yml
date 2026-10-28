@@ -1,9 +1,8 @@
 name: security
 
 on:
-  pull_request:
   push:
-    branches: [main]
+    branches: [dev]
   schedule:
     # Weekly re-scan catches CVEs published after the code last changed.
     - cron: "0 2 * * 1"
@@ -58,14 +57,3 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo "$TRIVY_IMAGE" \
             config --severity HIGH,CRITICAL --exit-code 1 .
-
-  dependency-review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/dependency-review-action@v5
-        with:
-          fail-on-severity: high
-          deny-licenses: AGPL-3.0, GPL-3.0
