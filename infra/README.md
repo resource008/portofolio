@@ -84,3 +84,10 @@ VPS: Ubuntu 24.04, 2 vCPU, 1.9 GB RAM + 1.9 GB swap, user `ubuntu`, SSH key only
 4. Port 6443 tidak dibuka. `kubectl` dari laptop lewat SSH tunnel: kubeconfig `/etc/rancher/k3s/k3s.yaml` disalin (dari Git Bash, bukan PowerShell, agar UTF-8) ke `~/.kube/portofolio.yaml`; `~/.ssh/config` punya alias `portofolio-k8s` dengan `LocalForward 6443 127.0.0.1:6443` dan `ServerAliveInterval 30`.
 
 RAM setelah k3s kosong: used 1.0 GB, available ±876 MB.
+
+## Tahap 3c: Infisical Operator
+
+1. Install dari laptop (Git Bash, tunnel terbuka): `helm repo add infisical-helm-charts https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/`, lalu `helm install infisical-operator infisical-helm-charts/secrets-operator -n infisical --create-namespace` (chart 0.11.16, ±13 MB RAM). Kalau unduhan chart putus lewat IPv6, unduh `.tgz` dengan `curl -4` lalu install dari file.
+2. Kunci pembuka, satu-satunya secret yang dibuat manual: `kubectl create secret generic universal-auth-credentials -n portofolio` dengan key `clientId` dan `clientSecret` milik identity `k8s-prod`. Nilai dibaca dengan `read -rsp` supaya tidak tampil di layar maupun di history. Client ID berupa UUID, jadi panjangnya harus 36 byte.
+3. `kubectl apply -f deploy/base/infisical.yaml` membuat `InfisicalConnection`, `InfisicalAuth`, dan `InfisicalStaticSecret` (API `v1beta1`; `InfisicalSecret` v1alpha1 sudah deprecated). Setiap `...Ref` wajib menulis `namespace`.
+4. Hasil: Secret `app-secrets` berisi 6 key `prod`, disinkronkan ulang setiap 60 detik. Panjang `DATABASE_URL` cocok dengan referensi `${POSTGRES_PASSWORD}` yang sudah ter-expand.
