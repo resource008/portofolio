@@ -14,6 +14,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
@@ -59,7 +60,7 @@ export default function ExperienceSection({
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "experiences"],
-    queryFn: () => apiGet<ExperienceContent>("/experiences"),
+    queryFn: () => apiGet<ExperienceContent>("/admin/experiences"),
   });
 
   const [pendingDelete, setPendingDelete] = useState<Experience | null>(null);
@@ -178,7 +179,12 @@ export default function ExperienceSection({
                     )}
 
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-sm">{item.position}</span>
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate font-medium text-sm">{item.position}</span>
+                        {!item.is_published && (
+                          <Badge className="shrink-0" variant="warning">{t("Draf")}</Badge>
+                        )}
+                      </span>
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
                         <span className="flex min-w-0 items-center gap-1">
                           <BuildingOffice2Icon className="size-3.5 shrink-0" />

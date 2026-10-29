@@ -22,6 +22,7 @@ interface ExperienceRow {
   description: string | null;
   skills: string[];
   is_current: boolean;
+  is_published: boolean;
 }
 
 interface ExperiencePhotoRow {
@@ -41,7 +42,7 @@ function toExperience(row: ExperienceRow, photos: ExperiencePhotoRow[]) {
 async function fetchExperience(id: number) {
   const [row] = await sql<ExperienceRow[]>`
     SELECT id, company_name, position, range_date, logo_url, description,
-           skills, is_current
+           skills, is_current, is_published
     FROM experiences
     WHERE id = ${id}
   `;
@@ -56,12 +57,13 @@ async function fetchExperience(id: number) {
   return toExperience(row, photos);
 }
 
-experienceRoutes.get("/experiences", async (c) => {
+async function listExperiences(publishedOnly: boolean) {
   const [rows, photos] = await Promise.all([
     sql<ExperienceRow[]>`
       SELECT id, company_name, position, range_date, logo_url, description,
-             skills, is_current
+             skills, is_current, is_published
       FROM experiences
+      ${publishedOnly ? sql`WHERE is_published = TRUE` : sql``}
       ORDER BY id
     `,
     sql<ExperiencePhotoRow[]>`
@@ -71,11 +73,17 @@ experienceRoutes.get("/experiences", async (c) => {
     `,
   ]);
 
-  return ok(c, {
+  return {
     section_header: SECTION_HEADER,
     items: rows.map((row) => toExperience(row, photos)),
-  });
-});
+  };
+}
+
+experienceRoutes.get("/experiences", async (c) => ok(c, await listExperiences(true)));
+
+experienceRoutes.get("/admin/experiences", requireAdmin, async (c) =>
+  ok(c, await listExperiences(false)),
+);
 
 experienceRoutes.get("/admin/experiences/:id", requireAdmin, async (c) => {
   const id = Number(c.req.param("id"));
@@ -93,6 +101,7 @@ const experienceSchema = z.object({
   skills: z.array(z.string()).optional().default([]),
   photos: z.array(z.string()).optional().default([]),
   is_current: z.boolean().optional().default(false),
+  is_published: z.boolean().optional().default(true),
 });
 
 experienceRoutes.post(
@@ -105,7 +114,7 @@ experienceRoutes.post(
     const id = await sql.begin(async (tx) => {
       const [row] = await tx<{ id: number }[]>`
         INSERT INTO experiences
-          (company_name, position, range_date, logo_url, description, skills, is_current)
+          (company_name, position, range_date, logo_url, description, skills, is_current, is_published)
         VALUES (
           ${body.company_name},
           ${body.position},
@@ -113,7 +122,8 @@ experienceRoutes.post(
           ${body.logo_url ?? null},
           ${body.description ?? null},
           ${sql.json(body.skills)},
-          ${body.is_current}
+          ${body.is_current},
+          ${body.is_published}
         )
         RETURNING id
       `;
@@ -153,6 +163,7 @@ experienceRoutes.put(
           description = ${body.description ?? null},
           skills = ${sql.json(body.skills)},
           is_current = ${body.is_current},
+          is_published = ${body.is_published},
           updated_at = now()
         WHERE id = ${id}
       `;

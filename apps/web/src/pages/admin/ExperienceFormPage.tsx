@@ -7,6 +7,7 @@ import { apiGet, apiSend } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { SaveMenuButton } from "@/components/admin/SaveMenuButton";
 import { Spinner } from "@/components/ui/spinner";
 import { toastManager } from "@/components/ui/toast";
 import MediaPreviewDialog from "@/components/admin/MediaPreviewDialog";
@@ -64,9 +65,10 @@ export default function ExperienceFormPage() {
     JSON.stringify(editing) !== JSON.stringify(baseline);
 
   const saveMutation = useMutation({
-    mutationFn: (form: ExperienceForm) => {
+    mutationFn: ({ form, publish }: { form: ExperienceForm; publish: boolean }) => {
       const payload = {
         ...form,
+        is_published: publish,
         skills: form.skills.map((item) => item.trim()).filter(Boolean),
         photos: form.photos.filter(Boolean),
       };
@@ -74,18 +76,21 @@ export default function ExperienceFormPage() {
         ? apiSend<Experience>("PUT", `/admin/experiences/${id}`, payload)
         : apiSend<Experience>("POST", "/admin/experiences", payload);
     },
-    onSuccess: (saved) => {
+    onSuccess: (saved, { publish }) => {
       if (!isEdit) createdIdRef.current = saved.id;
       queryClient.invalidateQueries({ queryKey: ["admin", "experiences"] });
       queryClient.invalidateQueries({ queryKey: ["experiences"] });
       toastManager.add({
-        title: t("Tersimpan"),
-        description: t("Data pengalaman berhasil disimpan."),
+        title: publish ? t("Tersimpan") : t("Disimpan sebagai draf"),
+        description: publish
+          ? t("Data pengalaman berhasil disimpan.")
+          : t("Belum tampil di halaman publik."),
         type: "success",
       });
       if (editingRef.current) {
-        setBaseline(editingRef.current);
-        setEditing(editingRef.current);
+        const next = { ...editingRef.current, is_published: publish };
+        setBaseline(next);
+        setEditing(next);
       }
     },
     onError: (error) => {
@@ -99,7 +104,9 @@ export default function ExperienceFormPage() {
 
   useUnsavedChangesGuard({
     isDirty,
-    onSave: () => (editing ? saveMutation.mutateAsync(editing) : Promise.resolve()),
+    onSave: () =>
+      editing ? saveMutation.mutateAsync({ form: editing, publish: false }) : Promise.resolve(),
+    autoSaveOnLeave: true,
   });
 
   useEffect(() => {
@@ -169,7 +176,7 @@ export default function ExperienceFormPage() {
             className="pb-24"
             onSubmit={(e) => {
               e.preventDefault();
-              saveMutation.mutate(editing);
+              saveMutation.mutate({ form: editing, publish: true });
             }}
           >
             <div className="space-y-4">
@@ -189,11 +196,12 @@ export default function ExperienceFormPage() {
 
           <div className="fixed bottom-0 left-0 right-0 z-30 flex items-center justify-end gap-2 border bg-card/95 px-4 py-3 shadow-sm backdrop-blur lg:px-6 md:left-[var(--sidebar-offset)]">
             <Button onClick={goBack} type="button" variant="ghost">
-              {t("Batal")}
+              {t("Kembali")}
             </Button>
-            <Button form="experience-form" loading={saveMutation.isPending} type="submit">
-              {t("Simpan")}
-            </Button>
+            <SaveMenuButton
+              loading={saveMutation.isPending}
+              onSave={(publish) => editing && saveMutation.mutate({ form: editing, publish })}
+            />
           </div>
         </>
       )}

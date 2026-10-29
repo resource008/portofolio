@@ -34,6 +34,7 @@ export interface ExperienceForm {
   skills: string[];
   photos: string[];
   is_current: boolean;
+  is_published: boolean;
 }
 
 export const EMPTY: ExperienceForm = {
@@ -45,6 +46,7 @@ export const EMPTY: ExperienceForm = {
   skills: [],
   photos: [],
   is_current: false,
+  is_published: false,
 };
 
 export function toForm(item: Experience): ExperienceForm {
@@ -58,6 +60,7 @@ export function toForm(item: Experience): ExperienceForm {
     skills: item.skills ?? [],
     photos: item.photos ?? [],
     is_current: item.is_current,
+    is_published: item.is_published,
   };
 }
 

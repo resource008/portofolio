@@ -24,6 +24,7 @@ interface EducationRow {
   gpa: number | null;
   description: string | null;
   is_current: boolean;
+  is_published: boolean;
 }
 
 interface CertificateRow {
@@ -75,7 +76,7 @@ async function fetchDocuments(certificateIds: number[]) {
 
 async function fetchEducation(id: number) {
   const [row] = await sql<EducationRow[]>`
-    SELECT id, logo_url, institution_name, degree_major, range_date, gpa::float8 AS gpa, description, is_current
+    SELECT id, logo_url, institution_name, degree_major, range_date, gpa::float8 AS gpa, description, is_current, is_published
     FROM educations
     WHERE id = ${id}
   `;
@@ -91,11 +92,12 @@ async function fetchEducation(id: number) {
   return toEducation(row, certificates, documents);
 }
 
-educationRoutes.get("/educations", async (c) => {
+async function listEducations(publishedOnly: boolean) {
   const [rows, certificates, documents] = await Promise.all([
     sql<EducationRow[]>`
-      SELECT id, logo_url, institution_name, degree_major, range_date, gpa::float8 AS gpa, description, is_current
+      SELECT id, logo_url, institution_name, degree_major, range_date, gpa::float8 AS gpa, description, is_current, is_published
       FROM educations
+      ${publishedOnly ? sql`WHERE is_published = TRUE` : sql``}
       ORDER BY id
     `,
     sql<CertificateRow[]>`
@@ -110,11 +112,17 @@ educationRoutes.get("/educations", async (c) => {
     `,
   ]);
 
-  return ok(c, {
+  return {
     section_header: SECTION_HEADER,
     items: rows.map((row) => toEducation(row, certificates, documents)),
-  });
-});
+  };
+}
+
+educationRoutes.get("/educations", async (c) => ok(c, await listEducations(true)));
+
+educationRoutes.get("/admin/educations", requireAdmin, async (c) =>
+  ok(c, await listEducations(false)),
+);
 
 const achievementSchema = z.object({
   organization: z.string().optional().nullable(),
@@ -131,6 +139,7 @@ const educationSchema = z.object({
   gpa: z.union([z.string(), z.number()]).optional().nullable(),
   description: z.string().optional().nullable(),
   is_current: z.boolean().optional().default(false),
+  is_published: z.boolean().optional().default(true),
   achievements: z.array(achievementSchema).optional().default([]),
 });
 
@@ -179,7 +188,7 @@ educationRoutes.post(
 
     const id = await sql.begin(async (tx) => {
       const [row] = await tx<{ id: number }[]>`
-        INSERT INTO educations (logo_url, institution_name, degree_major, range_date, gpa, description, is_current)
+        INSERT INTO educations (logo_url, institution_name, degree_major, range_date, gpa, description, is_current, is_published)
         VALUES (
           ${body.logo_url ?? null},
           ${body.institution_name},
@@ -187,7 +196,8 @@ educationRoutes.post(
           ${body.range_date},
           ${parseGpa(body.gpa)},
           ${body.description ?? null},
-          ${body.is_current}
+          ${body.is_current},
+          ${body.is_published}
         )
         RETURNING id
       `;
@@ -224,6 +234,7 @@ educationRoutes.put(
           gpa = ${parseGpa(body.gpa)},
           description = ${body.description ?? null},
           is_current = ${body.is_current},
+          is_published = ${body.is_published},
           updated_at = now()
         WHERE id = ${id}
       `;
