@@ -51,6 +51,7 @@ spec:
                   key: POSTGRES_PASSWORD
           securityContext:
             allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           readinessProbe:
@@ -74,8 +75,12 @@ spec:
               mountPath: /var/lib/postgresql
             - name: run
               mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
       volumes:
         - name: run
+          emptyDir: {}
+        - name: tmp
           emptyDir: {}
   volumeClaimTemplates:
     - metadata:
