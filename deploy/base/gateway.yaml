@@ -1,0 +1,28 @@
+# Front door served by the Traefik bundled with k3s (GatewayClass "traefik").
+# Listener ports are Traefik's entrypoints (8000/8443), exposed on the node as 80/443.
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: portofolio
+spec:
+  gatewayClassName: traefik
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 8000
+      hostname: portofolio-aguspranata.my.id
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 8443
+      hostname: portofolio-aguspranata.my.id
+      tls:
+        mode: Terminate
+        # Cloudflare Origin Certificate, synced from Infisical /tls.
+        certificateRefs:
+          - name: portofolio-tls
+      allowedRoutes:
+        namespaces:
+          from: Same

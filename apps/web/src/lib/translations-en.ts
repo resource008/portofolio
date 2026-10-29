@@ -303,7 +303,6 @@ export const EN: Record<string, string> = {
   "Tambah Tautan": "Add Link",
   "https://… atau nama@email.com": "https://… or name@email.com",
   "Subjudul (nama lengkap) wajib diisi.": "Subheading (full name) is required.",
-  "Deskripsi wajib diisi.": "Description is required.",
   "Keahlian unggulan #{n} wajib diisi.": "Highlight skill #{n} is required.",
   "Tech stack #{n} wajib dipilih.": "Tech stack #{n} must be selected.",
   "Perubahan berhasil disimpan.": "Changes saved successfully.",

@@ -49,3 +49,32 @@ spec:
       namespace: portofolio
       kind: Secret
       creationPolicy: Owner
+---
+# Cloudflare Origin Certificate for the Gateway. Kept in the /tls folder so it
+# stays out of app-secrets (the "/" source above is not recursive).
+apiVersion: secrets.infisical.com/v1beta1
+kind: InfisicalStaticSecret
+metadata:
+  name: portofolio-tls
+  namespace: portofolio
+spec:
+  infisicalAuthRef:
+    name: k8s-prod
+    namespace: portofolio
+  syncOptions:
+    refreshInterval: 60s
+  sources:
+    - projectId: 58e7c045-e1a2-4caa-99cc-d1f60aef7630
+      environmentSlug: prod
+      secretPath: /tls
+  targets:
+    - name: portofolio-tls
+      namespace: portofolio
+      kind: Secret
+      secretType: kubernetes.io/tls
+      creationPolicy: Owner
+      template:
+        engineVersion: v1
+        data:
+          tls.crt: "{{ .TLS_CRT.Value }}"
+          tls.key: "{{ .TLS_KEY.Value }}"

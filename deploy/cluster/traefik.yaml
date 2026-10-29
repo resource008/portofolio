@@ -1,0 +1,17 @@
+# Tunes the Traefik that k3s already ships (kube-system/traefik HelmChart).
+# Applied once per cluster, outside the app's Kustomize base.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true
+    # Keep the GatewayClass "traefik"; our own Gateway lives in deploy/base.
+    gatewayClass:
+      enabled: true
+    gateway:
+      enabled: false
