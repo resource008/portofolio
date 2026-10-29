@@ -531,11 +531,21 @@ export function HeroSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const name = profile?.subheading ?? "";
-  const heading = profile?.heading ?? "";
-  const description = profile?.description ?? "";
+  const settled = Boolean(profile) || profileError;
+  const template = settled && !profile?.subheading && !profile?.heading && !profile?.description;
+  const name = profile?.subheading || (template ? "Nama Kamu" : "");
+  const heading = profile?.heading || (template ? "Halo, saya" : "");
+  const description =
+    profile?.description ||
+    (template
+      ? "Tulis perkenalan singkat tentang dirimu, keahlian, dan apa yang sedang kamu kerjakan di panel admin."
+      : "");
 
-  const roles = (profile?.highlight_skills ?? []).slice(0, 5);
+  const savedRoles = (profile?.highlight_skills ?? []).slice(0, 5);
+  const roles =
+    savedRoles.length > 0 || !template
+      ? savedRoles
+      : ["Peran 1", "Peran 2", "Peran 3"].map((label, index) => ({ id: -1 - index, name: label }));
   const techStacks = (profile?.tech_stacks ?? []).map((stack) => stack.name);
 
   return (
