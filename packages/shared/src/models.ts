@@ -43,6 +43,7 @@ export interface Education {
   gpa: number | null;
   description: string | null;
   is_current: boolean;
+  is_published: boolean;
   achievements: Certificate[];
 }
 
@@ -65,6 +66,7 @@ export interface Experience {
   skills: string[];
   photos: string[];
   is_current: boolean;
+  is_published: boolean;
 }
 
 export interface ExperienceContent {
@@ -206,7 +208,6 @@ export interface NotificationItem {
 
 export interface DashboardSummary {
   total_likes: number;
-  total_shares: number;
   total_projects: number;
   total_photos: number;
   total_unread_messages: number;

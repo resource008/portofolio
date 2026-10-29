@@ -20,7 +20,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SaveMenuButton } from "@/components/admin/SaveMenuButton";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -85,6 +87,7 @@ interface EducationForm {
   gpa: string;
   description: string;
   is_current: boolean;
+  is_published: boolean;
   achievements: AchievementForm[];
 }
 
@@ -96,6 +99,7 @@ const EMPTY: EducationForm = {
   gpa: "",
   description: "",
   is_current: false,
+  is_published: false,
   achievements: [],
 };
 
@@ -116,6 +120,7 @@ function toForm(item: Education): EducationForm {
     gpa: item.gpa != null ? String(item.gpa) : "",
     description: item.description ?? "",
     is_current: item.is_current,
+    is_published: item.is_published,
     achievements: item.achievements.map((achievement) => ({
       organization: achievement.organization ?? "",
       title: achievement.title,
@@ -136,7 +141,7 @@ export default function EducationSection({
   const queryClient = useQueryClient();
   const { data, isLoading, error } = useQuery({
     queryKey: ["admin", "educations"],
-    queryFn: () => apiGet<EducationContent>("/educations"),
+    queryFn: () => apiGet<EducationContent>("/admin/educations"),
   });
 
   const [editing, setEditing] = useState<EducationForm | null>(null);
@@ -177,9 +182,10 @@ export default function EducationSection({
   }
 
   const saveMutation = useMutation({
-    mutationFn: (form: EducationForm) => {
+    mutationFn: ({ form, publish }: { form: EducationForm; publish: boolean }) => {
       const payload = {
         ...form,
+        is_published: publish,
         achievements: form.achievements.map((achievement) => ({
           ...achievement,
           documents: achievement.documents
@@ -191,15 +197,18 @@ export default function EducationSection({
         ? apiSend<{ id: number }>("PUT", `/admin/educations/${form.id}`, payload)
         : apiSend<{ id: number }>("POST", "/admin/educations", payload);
     },
-    onSuccess: (saved, form) => {
+    onSuccess: (saved, { form, publish }) => {
       // Item baru mendapat id agar simpan berikutnya memperbarui item yang sama.
-      const next = { ...form, id: form.id ?? saved.id };
+      const next = { ...form, id: form.id ?? saved.id, is_published: publish };
       setEditing(next);
       setBaseline(next);
       queryClient.invalidateQueries({ queryKey: ["admin", "educations"] });
+      queryClient.invalidateQueries({ queryKey: ["educations"] });
       toastManager.add({
-        title: t("Disimpan sebagai draf"),
-        description: t("Perubahan telah disimpan."),
+        title: publish ? t("Tersimpan") : t("Disimpan sebagai draf"),
+        description: publish
+          ? t("Data pendidikan berhasil disimpan.")
+          : t("Belum tampil di halaman publik."),
         type: "success",
       });
     },
@@ -243,7 +252,8 @@ export default function EducationSection({
 
   useUnsavedChangesGuard({
     isDirty,
-    onSave: () => (editing ? saveMutation.mutateAsync(editing) : Promise.resolve()),
+    onSave: () =>
+      editing ? saveMutation.mutateAsync({ form: editing, publish: false }) : Promise.resolve(),
     autoSaveOnLeave: true,
   });
 
@@ -289,7 +299,7 @@ export default function EducationSection({
         <InlineEducationForm
           description={description}
           editing={editing}
-          onSubmit={() => saveMutation.mutate(editing)}
+          onSubmit={() => saveMutation.mutate({ form: editing, publish: true })}
           saveError={saveMutation.error}
           setEditing={setEditing}
         />
@@ -302,11 +312,12 @@ export default function EducationSection({
                   type="button"
                   variant="ghost"
                 >
-                  {t("Batal")}
+                  {t("Kembali")}
                 </Button>
-                <Button form="education-form" loading={saveMutation.isPending} type="submit">
-                  {t("Simpan")}
-                </Button>
+                <SaveMenuButton
+                  loading={saveMutation.isPending}
+                  onSave={(publish) => saveMutation.mutate({ form: editing, publish })}
+                />
               </div>
             </div>,
             actionBarHost,
@@ -398,8 +409,13 @@ export default function EducationSection({
                     )}
 
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-sm">
-                        {item.institution_name}
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className="truncate font-medium text-sm">
+                          {item.institution_name}
+                        </span>
+                        {!item.is_published && (
+                          <Badge className="shrink-0" variant="warning">{t("Draf")}</Badge>
+                        )}
                       </span>
                       <span className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
                         <span className="flex min-w-0 items-center gap-1">
@@ -592,7 +608,7 @@ export default function EducationSection({
                 className="flex min-h-0 flex-1 flex-col"
                 onSubmit={(e) => {
                   e.preventDefault();
-                  saveMutation.mutate(editing);
+                  saveMutation.mutate({ form: editing, publish: true });
                 }}
               >
                 <DrawerPanel className="space-y-4 pb-8" scrollFade={false}>
@@ -634,11 +650,12 @@ export default function EducationSection({
                     type="button"
                     variant="ghost"
                   >
-                    {t("Batal")}
+                    {t("Kembali")}
                   </Button>
-                  <Button loading={saveMutation.isPending} type="submit">
-                    {t("Simpan")}
-                  </Button>
+                  <SaveMenuButton
+                    loading={saveMutation.isPending}
+                    onSave={(publish) => saveMutation.mutate({ form: editing, publish })}
+                  />
                 </DrawerFooter>
               </form>
             </Tabs>

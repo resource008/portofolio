@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { HeroSection, HeroTechBar } from "@/components/public/HeroSection";
 import { EducationSection } from "@/components/public/EducationSection";
 import { ExperienceSection } from "@/components/public/ExperienceSection";
@@ -8,11 +8,18 @@ import { SocialDock } from "@/components/public/SocialDock";
 import { PublicHeader } from "@/components/public/PublicHeader";
 
 export default function HomePage() {
-  const { hash } = useLocation();
+  const { hash, state, pathname } = useLocation();
+  const navigate = useNavigate();
+  const scrollTo = (state as { scrollTo?: string } | null)?.scrollTo;
+
+  // Tautan lama (/#section) tetap jalan, tapi # dibuang dari URL.
+  useEffect(() => {
+    if (hash) navigate(pathname, { replace: true, state: { scrollTo: hash.slice(1) } });
+  }, [hash, navigate, pathname]);
 
   // Dicoba beberapa kali karena data section diambil async.
   useEffect(() => {
-    const id = hash.slice(1);
+    const id = scrollTo;
     if (!id) return;
     let tries = 0;
     const timer = window.setInterval(() => {
@@ -23,7 +30,7 @@ export default function HomePage() {
       }
     }, 100);
     return () => window.clearInterval(timer);
-  }, [hash]);
+  }, [scrollTo]);
 
   return (
     <div className="min-h-svh bg-background">

@@ -1,3 +1,4 @@
+import { SectionEmpty } from "@/components/public/SectionEmpty";
 import { useQuery } from "@tanstack/react-query";
 import { AcademicCapIcon, ArrowUpRightIcon, CalendarIcon, DocumentTextIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import type { Certificate, Education, EducationContent } from "@portofolio/shared";
@@ -168,7 +169,7 @@ function EducationTimeline({ items }: { items: Education[] }) {
 export function EducationSection() {
   const revealRef = useRef<HTMLDivElement>(null);
   useRevealOnScroll(revealRef);
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["educations"],
     queryFn: () => apiGet<EducationContent>("/educations"),
   });
@@ -196,7 +197,7 @@ export function EducationSection() {
             ref={revealRef}
             className={cn(
               "flex flex-col gap-6",
-              isEmpty ? "mx-auto max-w-2xl items-center text-center" : "items-start text-left",
+              "items-start text-left",
             )}
           >
             <img
@@ -215,6 +216,7 @@ export function EducationSection() {
                 <p className="mt-3 text-muted-foreground" data-reveal="text">{description}</p>
               ) : null}
             </div>
+            {isEmpty && !isLoading ? <SectionEmpty /> : null}
           </div>
         </div>
       </section>

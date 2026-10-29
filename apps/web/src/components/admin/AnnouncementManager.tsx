@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import {
   DndContext,
@@ -34,7 +34,9 @@ import { cn } from "@/lib/utils";
 import { translate, useLanguage } from "@/lib/language";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardFooter, CardPanel } from "@/components/ui/card";
+import { Card, CardPanel } from "@/components/ui/card";
+import { Dialog, DialogFooter, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "@/components/ui/dialog";
+import { Drawer, DrawerFooter, DrawerHeader, DrawerPanel, DrawerPopup, DrawerTitle } from "@/components/ui/drawer";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty";
 import { Field, FieldLabel } from "@/components/ui/field";
@@ -96,16 +98,11 @@ export default function AnnouncementManager({ className }: { className?: string 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const isMobile = useMediaQuery("max-md");
+  const isLargeScreen = useMediaQuery("lg");
 
   useEffect(() => {
     if (!isMobile) setReorderMode(false);
   }, [isMobile]);
-
-  const formPanelRef = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    if (!editing || !isMobile) return;
-    formPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, [editing, isMobile]);
 
   const items = data?.announcements ?? [];
   const projects = projectsData ?? [];
@@ -220,6 +217,31 @@ export default function AnnouncementManager({ className }: { className?: string 
     setEditing(toForm(item));
   }
 
+  const formTitle = editing?.id ? t("Ubah Pengumuman") : t("Tambah Pengumuman");
+  const formBody = editing ? (
+    <AnnouncementFormPanel
+      autoTakenByOther={autoTakenByOther}
+      form={editing}
+      onChange={setEditing}
+      projects={projects}
+    />
+  ) : null;
+  const formActions = (
+    <>
+      <Button onClick={() => setEditing(null)} type="button" variant="ghost">
+        <XMarkIcon /> {t("Batal")}
+      </Button>
+      <Button
+        loading={saveMutation.isPending}
+        onClick={() => editing && saveMutation.mutate(editing)}
+        type="button"
+      >
+        {!saveMutation.isPending && <ArrowDownTrayIcon />}
+        {t("Simpan")}
+      </Button>
+    </>
+  );
+
   const listContent = () => (
     <>
       {error && (
@@ -275,90 +297,68 @@ export default function AnnouncementManager({ className }: { className?: string 
 
   return (
     <>
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <div className={cn("space-y-3", className)}>
-          {isMobile && items.length > 1 && (
-            <div className="flex justify-end">
-              <Button
-                aria-pressed={reorderMode}
-                onClick={() => setReorderMode((mode) => !mode)}
-                size="sm"
-                type="button"
-                variant={reorderMode ? "default" : "secondary"}
-              >
-                {reorderMode ? <ClipboardDocumentListIcon className="size-4" /> : <EllipsisVerticalIcon className="size-4" />}
-                {reorderMode ? t("Selesai") : t("Ubah urutan")}
-              </Button>
-            </div>
-          )}
-          {listContent()}
-        </div>
-
-        <aside className="lg:sticky lg:top-[78px] lg:self-start" ref={formPanelRef}>
-          <Card>
-            <CardPanel className="space-y-4">
-              {editing ? (
-                <>
-                  <div className="flex items-center justify-between gap-2">
-                    <h3 className="font-medium text-sm">
-                      {editing.id ? t("Ubah Pengumuman") : t("Tambah Pengumuman")}
-                    </h3>
-                    <Button
-                      aria-label={t("Tutup form")}
-                      onClick={() => setEditing(null)}
-                      size="icon-sm"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <XMarkIcon />
-                    </Button>
-                  </div>
-
-                  <AnnouncementFormPanel
-                    autoTakenByOther={autoTakenByOther}
-                    form={editing}
-                    onChange={setEditing}
-                    projects={projects}
-                  />
-                </>
-              ) : (
-                <>
-                  <p className="text-muted-foreground text-sm">
-                    {t("Pilih salah satu item untuk mengubah atau tambah pengumuman.")}
-                  </p>
-                  <Button className="w-full" onClick={openCreate} type="button">
-                    <PlusIcon />
-                    {t("Tambah")}
-                  </Button>
-                </>
-              )}
-            </CardPanel>
-            {editing && (
-              <CardFooter className="flex-col-reverse gap-2 border-t sm:flex-row sm:justify-end">
-                <Button
-                  className="w-full sm:w-auto lg:hidden"
-                  onClick={() => setEditing(null)}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <XMarkIcon /> {t("Batal")}
-                </Button>
-                <Button
-                  className="w-full sm:w-auto"
-                  loading={saveMutation.isPending}
-                  onClick={() => saveMutation.mutate(editing)}
-                  size="sm"
-                  type="button"
-                >
-                  {!saveMutation.isPending && <ArrowDownTrayIcon />}
-                  {t("Simpan")}
-                </Button>
-              </CardFooter>
-            )}
-          </Card>
-        </aside>
+      <div className={cn("space-y-3 pb-24", className)}>
+        {isMobile && items.length > 1 && (
+          <div className="flex justify-end">
+            <Button
+              aria-pressed={reorderMode}
+              onClick={() => setReorderMode((mode) => !mode)}
+              size="sm"
+              type="button"
+              variant={reorderMode ? "default" : "secondary"}
+            >
+              {reorderMode ? <ClipboardDocumentListIcon className="size-4" /> : <EllipsisVerticalIcon className="size-4" />}
+              {reorderMode ? t("Selesai") : t("Ubah urutan")}
+            </Button>
+          </div>
+        )}
+        {listContent()}
       </div>
+
+      <Button
+        aria-label={t("Tambah Pengumuman")}
+        className="fixed right-6 bottom-6 z-40 size-16 rounded-full shadow-lg before:rounded-full sm:size-16"
+        onClick={openCreate}
+        size="icon"
+        type="button"
+      >
+        <PlusIcon className="size-7" />
+      </Button>
+
+      {isLargeScreen ? (
+        <Dialog
+          onOpenChange={(next) => {
+            if (!next) setEditing(null);
+          }}
+          open={editing !== null}
+        >
+          <DialogPopup className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>{formTitle}</DialogTitle>
+            </DialogHeader>
+            <DialogPanel>{formBody}</DialogPanel>
+            <DialogFooter>{formActions}</DialogFooter>
+          </DialogPopup>
+        </Dialog>
+      ) : (
+        <Drawer
+          onOpenChange={(next) => {
+            if (!next) setEditing(null);
+          }}
+          open={editing !== null}
+          position="bottom"
+        >
+          <DrawerPopup className="w-full max-w-2xl justify-self-center" showCloseButton>
+            <DrawerHeader>
+              <DrawerTitle>{formTitle}</DrawerTitle>
+            </DrawerHeader>
+            <DrawerPanel className="pb-8" scrollFade={false}>
+              {formBody}
+            </DrawerPanel>
+            <DrawerFooter>{formActions}</DrawerFooter>
+          </DrawerPopup>
+        </Drawer>
+      )}
 
       <ConfirmDialog
         description={pendingDelete ? t("Pengumuman ini akan dihapus permanen.") : undefined}
@@ -735,14 +735,14 @@ function SortableAnnouncementItem({
   return (
     <li
       className={cn(
-        "group rounded-xl border bg-card transition-colors",
+        "group overflow-hidden rounded-xl border bg-card transition-colors",
         isDragging && "relative z-10 border bg-card shadow-md",
         !item.is_active && "opacity-60",
       )}
       ref={setNodeRef}
       style={style}
     >
-      <div className="flex items-center gap-3 p-3">
+      <div className={cn("flex items-center gap-3", !(isMobile && !reorderMode) && "p-3")}>
         {(!isMobile || reorderMode) && (
           <Button
             aria-label={t("Geser")}
@@ -782,7 +782,7 @@ function SortableAnnouncementItem({
           className="min-w-0 flex-1"
           enabled={isMobile && !reorderMode}
         >
-          <div className="flex min-w-0 items-center gap-3">
+          <div className={cn("flex min-w-0 items-center gap-3", isMobile && !reorderMode && "p-3")}>
             <span
               className={cn(
                 "grid size-11 shrink-0 place-items-center rounded-xl border",

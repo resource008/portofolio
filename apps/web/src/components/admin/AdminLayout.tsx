@@ -683,7 +683,7 @@ function AdminLayoutContent() {
             active ? "pointer-events-auto" : "pointer-events-none",
           )}
         >
-          <div className="relative flex flex-col items-center gap-4">
+          <div className="relative grid place-items-center">
             <div ref={flightLogoWrapRef} className="relative grid place-items-center">
               <svg
                 aria-hidden="true"
@@ -726,7 +726,7 @@ function AdminLayoutContent() {
             </div>
             <div
               ref={flightLoadingRef}
-              className="flex h-20 flex-col items-center justify-center gap-1 opacity-0"
+              className="absolute top-full left-1/2 mt-8 flex -translate-x-1/2 flex-col items-center gap-1 opacity-0"
             >
               <div className="w-[min(78vw,340px)] text-foreground">
                 {caption ? (

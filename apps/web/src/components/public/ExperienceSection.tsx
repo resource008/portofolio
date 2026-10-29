@@ -1,3 +1,4 @@
+import { SectionEmpty } from "@/components/public/SectionEmpty";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { BriefcaseIcon } from "@heroicons/react/24/outline";
@@ -217,7 +218,7 @@ function ExperienceRow({ item }: { item: Experience }) {
 export function ExperienceSection() {
   const revealRef = useRef<HTMLDivElement>(null);
   useRevealOnScroll(revealRef);
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["experiences"],
     queryFn: () => apiGet<ExperienceContent>("/experiences"),
   });
@@ -245,7 +246,7 @@ export function ExperienceSection() {
             ref={revealRef}
             className={cn(
               "flex flex-col gap-6",
-              isEmpty ? "mx-auto max-w-2xl items-center text-center" : "items-start text-left",
+              "items-start text-left",
             )}
           >
             <img
@@ -264,6 +265,7 @@ export function ExperienceSection() {
                 <p className="mt-3 text-muted-foreground" data-reveal="text">{description}</p>
               ) : null}
             </div>
+            {isEmpty && !isLoading ? <SectionEmpty /> : null}
           </div>
         </div>
       </section>

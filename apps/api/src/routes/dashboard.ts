@@ -72,9 +72,6 @@ dashboardRoutes.get("/admin/dashboard/stats", requireAdmin, async (c) => {
   const [likes] = await sql<{ count: number }[]>`
     SELECT COUNT(*)::int AS count FROM analytics_logs WHERE event_type = 'like'
   `;
-  const [shares] = await sql<{ count: number }[]>`
-    SELECT COUNT(*)::int AS count FROM analytics_logs WHERE event_type = 'share'
-  `;
   const [projects] = await sql<{ count: number }[]>`
     SELECT COUNT(*)::int AS count FROM projects
   `;
@@ -101,7 +98,6 @@ dashboardRoutes.get("/admin/dashboard/stats", requireAdmin, async (c) => {
   return ok(c, {
     summary: {
       total_likes: likes?.count ?? 0,
-      total_shares: shares?.count ?? 0,
       total_projects: projects?.count ?? 0,
       total_photos: (projectPhotos?.count ?? 0) + (experiencePhotos?.count ?? 0),
       total_unread_messages: unread?.count ?? 0,

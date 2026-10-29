@@ -28,7 +28,6 @@ function collectContentSections(content: HTMLElement | null): HTMLElement[] {
 
 const ENTRANCE_SCALE = 1.4;
 const CENTER_SCALE = ENTRANCE_SCALE;
-const LOGO_MORPH_LIFT = 44;
 const ENTRANCE_HOLD = 5;
 const COVER_HOLD = 0.7;
 export const RING_RADIUS = 29;
@@ -331,7 +330,6 @@ export function useDashboardTransition({
       const flightLoading = flightLoadingRef.current;
       const flightTyping = flightTypingRef.current;
       const flightTypingRow = flightTypingRowRef.current;
-      const logoWrap = flightLogoWrapRef.current;
       const { content, contentSections, logo, topbar, sidebarFrame, contentFrame, sidebarItems } =
         query();
 
@@ -358,7 +356,6 @@ export function useDashboardTransition({
       if (flightTypingRow) gsap.set(flightTypingRow, { display: "none" });
 
       // Offset the column before measuring so placeGhostAt starts on the real logo slot.
-      if (logoWrap) gsap.set(logoWrap, { y: LOGO_MORPH_LIFT });
 
       const { x, y, scale } = placeGhostAt(flight, rect);
       gsap.set(flight, { x, y, scale, transformOrigin: "50% 50%" });
@@ -407,7 +404,6 @@ export function useDashboardTransition({
           textAt,
         )
         .to(flightLoading, { opacity: 1, duration: 0.3, ease: "power2.out" }, textAt)
-        .to(logoWrap ?? [], { y: 0, duration: 0.5, ease: "sidebar" }, textAt)
         .add(() => showCaption(translate("Mohon Tunggu"), false), textAt)
         .to({}, { duration: COVER_STROKE + FILL_DELAY + FILL_SECONDS + COVER_HOLD }, textAt)
         .to(
@@ -443,7 +439,6 @@ export function useDashboardTransition({
     const flightLoading = flightLoadingRef.current;
     const flightTyping = flightTypingRef.current;
     const flightTypingRow = flightTypingRowRef.current;
-    const logoWrap = flightLogoWrapRef.current;
     const { content, contentSections, logo, topbar, sidebarFrame, contentFrame, sidebarItems } =
       query();
 
@@ -489,7 +484,6 @@ export function useDashboardTransition({
     }
 
     gsap.set(flightLoading, { display: LOADING_DISPLAY, opacity: 0 });
-    if (logoWrap) gsap.set(logoWrap, { y: LOGO_MORPH_LIFT });
     flightTyping.textContent = "";
 
     const reload = isPageReload();
@@ -519,9 +513,6 @@ export function useDashboardTransition({
       );
     }
     tl.to(flightLoading, { opacity: 1, duration: 0.3, ease: "power2.out" }, textAt);
-    if (logoWrap) {
-      tl.to(logoWrap, { y: 0, duration: 0.5, ease: "sidebar" }, textAt);
-    }
     if (welcome) {
       tl.add(() => {
         showCaption(translate("Selamat Datang!"), true);

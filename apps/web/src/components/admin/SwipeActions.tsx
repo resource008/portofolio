@@ -11,12 +11,14 @@ export function SwipeActions({
   actions,
   enabled = true,
   className,
+  contentClassName,
   bare = false,
 }: {
   children: ReactNode;
   actions: ReactNode;
   enabled?: boolean;
   className?: string;
+  contentClassName?: string;
   bare?: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -70,7 +72,7 @@ export function SwipeActions({
         {actions}
       </div>
       <div
-        className={cn("relative", !bare && "bg-card")}
+        className={cn("relative", !bare && "bg-card", contentClassName)}
         onTouchCancel={endDrag}
         onTouchEnd={endDrag}
         onTouchMove={onTouchMove}
