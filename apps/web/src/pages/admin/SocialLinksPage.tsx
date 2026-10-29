@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "motion/react";
 import {
   DndContext,
   PointerSensor,
@@ -70,8 +71,19 @@ export default function SocialLinksPage() {
   const [baseline, setBaseline] = useState<FormState | null>(null);
   const requestLeave = useRequestLeave();
 
+  // Form terakhir tetap dirender selama animasi tutup dialog.
+  const [shown, setShown] = useState<FormState | null>(null);
   useEffect(() => {
-    if (data) setItems(data);
+    if (editing) setShown(editing);
+  }, [editing]);
+  const form = editing ?? shown;
+
+  // Id yang sudah ada saat pertama dimuat tidak dianimasikan; item baru muncul dengan animasi.
+  const knownIds = useRef<Set<number> | null>(null);
+  useEffect(() => {
+    if (!data) return;
+    setItems(data);
+    if (!knownIds.current) knownIds.current = new Set(data.map((item) => item.id));
   }, [data]);
 
   function openEditor(form: FormState) {
@@ -192,17 +204,25 @@ export default function SocialLinksPage() {
           <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-3">
               {items.map((item) => (
-                <SortableRow
-                  item={item}
-                  key={item.id}
-                  onDelete={() => deleteMutation.mutate(item.id)}
-                  onEdit={() =>
-                    openEditor({
-                      id: item.id,
-                      url: item.url,
-                    })
+                <motion.div
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  initial={
+                    knownIds.current?.has(item.id) ? false : { opacity: 0, y: 16, scale: 0.97 }
                   }
-                />
+                  key={item.id}
+                  transition={{ type: "spring", duration: 0.5, bounce: 0.25 }}
+                >
+                  <SortableRow
+                    item={item}
+                    onDelete={() => deleteMutation.mutate(item.id)}
+                    onEdit={() =>
+                      openEditor({
+                        id: item.id,
+                        url: item.url,
+                      })
+                    }
+                  />
+                </motion.div>
               ))}
             </div>
           </SortableContext>
@@ -218,12 +238,11 @@ export default function SocialLinksPage() {
         <PlusIcon className="size-7" />
       </Button>
 
-      {editing && (
         <Dialog.Root
           onOpenChange={(open) => {
             if (!open) requestLeave(() => setEditing(null));
           }}
-          open
+          open={editing !== null}
         >
           <Dialog.Portal>
             <Dialog.Backdrop
@@ -231,6 +250,7 @@ export default function SocialLinksPage() {
               forceRender
             />
             <Dialog.Viewport className="fixed inset-0 z-50 grid grid-rows-[1fr_auto_3fr] justify-items-center p-4 max-sm:grid-rows-[1fr_auto] max-sm:p-0 max-sm:pt-12">
+              {form && (
               <Dialog.Popup
                 className="relative row-start-2 flex max-h-full min-h-0 w-full min-w-0 max-w-md origin-center flex-col rounded-2xl border bg-popover not-dark:bg-clip-padding text-popover-foreground opacity-[calc(1-var(--nested-dialogs))] shadow-lg/5 outline-none transition-[scale,opacity,translate] duration-200 ease-in-out will-change-transform before:pointer-events-none before:absolute before:inset-0 before:rounded-[calc(var(--radius-2xl)-1px)] before:shadow-[0_1px_--theme(--color-black/4%)] data-ending-style:opacity-0 data-starting-style:opacity-0 sm:scale-[calc(1-0.1*var(--nested-dialogs))] sm:data-ending-style:scale-98 sm:data-starting-style:scale-98 dark:before:shadow-[0_-1px_--theme(--color-white/6%)] max-sm:max-w-none max-sm:origin-bottom max-sm:rounded-none max-sm:border-x-0 max-sm:border-t max-sm:border-b-0 max-sm:data-ending-style:translate-y-4 max-sm:data-starting-style:translate-y-4 max-sm:before:hidden max-sm:before:rounded-none"
                 data-slot="dialog-popup"
@@ -247,14 +267,14 @@ export default function SocialLinksPage() {
                   data-slot="dialog-header"
                 >
                   <Dialog.Title className="font-heading font-semibold text-base leading-none">
-                    {editing.id ? translate("Ubah Tautan") : translate("Tambah Tautan")}
+                    {form.id ? translate("Ubah Tautan") : translate("Tambah Tautan")}
                   </Dialog.Title>
                 </div>
                 <form
                   className="flex min-h-0 flex-1 flex-col"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    saveMutation.mutate(editing);
+                    if (editing) saveMutation.mutate(editing);
                   }}
                 >
                   <div
@@ -263,7 +283,7 @@ export default function SocialLinksPage() {
                   >
                     <SocialLinkFormFields
                       error={saveMutation.error as Error | null}
-                      form={editing}
+                      form={form}
                       onChange={setEditing}
                     />
                   </div>
@@ -284,10 +304,10 @@ export default function SocialLinksPage() {
                   </div>
                 </form>
               </Dialog.Popup>
+              )}
             </Dialog.Viewport>
           </Dialog.Portal>
         </Dialog.Root>
-      )}
     </div>
   );
 }
