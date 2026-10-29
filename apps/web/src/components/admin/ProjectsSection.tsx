@@ -1236,7 +1236,7 @@ function ProjectCover({ url }: { url: string }) {
 function ProjectItemBody({ item }: { item: Project }) {
   const { language } = useLanguage();
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 items-start gap-2 overflow-y-auto p-3">
+    <div className="flex min-w-0 flex-1 items-start gap-2 p-3">
       <div className="min-w-0 flex-1 space-y-1.5">
         <p className="line-clamp-2 font-medium text-sm">{item.title}</p>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-muted-foreground text-xs">
@@ -1417,40 +1417,42 @@ function ProjectCardItem({
 }) {
   const { t } = useLanguage();
   return (
-    <SwipeActions
-      actions={
-        <>
-          <SwipeActionButton
-            aria-label={t("Ubah")}
-            className="bg-accent text-foreground"
-            onClick={onEdit}
-          >
-            <PencilIcon className="size-4" />
-          </SwipeActionButton>
-          <SwipeActionButton
-            aria-label={t("Hapus")}
-            className="bg-destructive text-white"
-            onClick={onDelete}
-          >
-            <TrashIcon className="size-4" />
-          </SwipeActionButton>
-        </>
-      }
-      enabled={isMobile}
-    >
-      <div className="group flex max-h-96 flex-col overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm">
-        <ProjectItemCover
-          item={item}
-          loadingDetail={loadingDetail}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onToggleSelect={onToggleSelect}
-          selectMode={selectMode}
-          selected={selected}
-        />
-        <ProjectItemBody item={item} />
-      </div>
-    </SwipeActions>
+    <div className="group overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm">
+      <SwipeActions
+        actions={
+          <>
+            <SwipeActionButton
+              aria-label={t("Ubah")}
+              className="bg-accent text-foreground"
+              onClick={onEdit}
+            >
+              <PencilIcon className="size-4" />
+            </SwipeActionButton>
+            <SwipeActionButton
+              aria-label={t("Hapus")}
+              className="bg-destructive text-white"
+              onClick={onDelete}
+            >
+              <TrashIcon className="size-4" />
+            </SwipeActionButton>
+          </>
+        }
+        enabled={isMobile}
+      >
+        <div className="flex flex-col">
+          <ProjectItemCover
+            item={item}
+            loadingDetail={loadingDetail}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            onToggleSelect={onToggleSelect}
+            selectMode={selectMode}
+            selected={selected}
+          />
+          <ProjectItemBody item={item} />
+        </div>
+      </SwipeActions>
+    </div>
   );
 }
 
@@ -1475,41 +1477,45 @@ function ProjectListItem({
 }) {
   const { t } = useLanguage();
   return (
-    <SwipeActions
-      actions={
-        <>
-          <SwipeActionButton
-            aria-label={t("Ubah")}
-            className="bg-accent text-foreground"
-            onClick={onEdit}
-          >
-            <PencilIcon className="size-4" />
-          </SwipeActionButton>
-          <SwipeActionButton
-            aria-label={t("Hapus")}
-            className="bg-destructive text-white"
-            onClick={onDelete}
-          >
-            <TrashIcon className="size-4" />
-          </SwipeActionButton>
-        </>
-      }
-      enabled={isMobile}
-    >
-      <div className="group flex h-36 flex-row overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm">
-        <ProjectItemCover
-          className="h-full w-40 sm:w-48"
-          item={item}
-          loadingDetail={loadingDetail}
-          onDelete={onDelete}
-          onEdit={onEdit}
-          onToggleSelect={onToggleSelect}
-          selectMode={selectMode}
-          selected={selected}
-        />
-        <ProjectItemBody item={item} />
-      </div>
-    </SwipeActions>
+    <div className="group h-36 overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-sm">
+      <SwipeActions
+        actions={
+          <>
+            <SwipeActionButton
+              aria-label={t("Ubah")}
+              className="bg-accent text-foreground"
+              onClick={onEdit}
+            >
+              <PencilIcon className="size-4" />
+            </SwipeActionButton>
+            <SwipeActionButton
+              aria-label={t("Hapus")}
+              className="bg-destructive text-white"
+              onClick={onDelete}
+            >
+              <TrashIcon className="size-4" />
+            </SwipeActionButton>
+          </>
+        }
+        className="h-full"
+        contentClassName="h-full"
+        enabled={isMobile}
+      >
+        <div className="flex h-full flex-row">
+          <ProjectItemCover
+            className="h-full w-40 sm:w-48"
+            item={item}
+            loadingDetail={loadingDetail}
+            onDelete={onDelete}
+            onEdit={onEdit}
+            onToggleSelect={onToggleSelect}
+            selectMode={selectMode}
+            selected={selected}
+          />
+          <ProjectItemBody item={item} />
+        </div>
+      </SwipeActions>
+    </div>
   );
 }
 
