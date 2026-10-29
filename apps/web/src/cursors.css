@@ -58,6 +58,11 @@ html :is(.cursor-move, .cursor-move *, [data-slot="sidebar-rail"]) {
   cursor: url("./assets/cursors/move.svg") 24 24, move;
 }
 
+/* dock.css memasang cursor bawaan sistem; timpa dengan set kursor macOS. */
+html :is(.dock-item, .dock-item *, .dock-menu-row, .dock-menu-row *) {
+  cursor: url("./assets/cursors/handpointing.svg") 20 12, pointer;
+}
+
 html :is(:disabled, [aria-disabled="true"], [data-disabled], .cursor-not-allowed) {
   cursor: url("./assets/cursors/default.svg") 15 12, not-allowed;
 }

@@ -8,6 +8,7 @@ import { apiGet } from "@/lib/api";
 import { safeHref } from "@/lib/sanitize";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-media-query";
+import { resolveTheme, useTheme } from "@/lib/theme";
 import Dock, { type DockItemData } from "@/components/ui/Dock";
 
 function SocialLogo({
@@ -116,10 +117,9 @@ function useSectionNavigator() {
       const target = document.getElementById(id);
       if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
       else window.scrollTo({ top: 0, behavior: "smooth" });
-      window.history.replaceState(null, "", `#${id}`);
       return;
     }
-    navigate(`/#${id}`);
+    navigate("/", { state: { scrollTo: id } });
   };
 }
 
@@ -137,6 +137,8 @@ export function SocialDock() {
 
   const links = data ?? [];
   const isMobile = useIsMobile();
+  const { theme } = useTheme();
+  const isDark = resolveTheme(theme) === "dark";
   const openLink = (link: SocialLink) => {
     const href = safeHref(link.url);
     if (href) window.open(href, "_blank", "noopener,noreferrer");
@@ -199,17 +201,17 @@ export function SocialDock() {
       <div
         aria-hidden={!visible}
         className={cn(
-          "pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center pb-[env(safe-area-inset-bottom)] transition-all duration-300 ease-out",
+          "pointer-events-none fixed inset-x-0 bottom-[env(safe-area-inset-bottom)] z-40 h-28 transition-all duration-300 ease-out",
           visible ? "translate-y-0 opacity-100" : "invisible translate-y-full opacity-0",
         )}
       >
         <Dock
-          animateIn
           baseItemSize={48}
           className="pointer-events-auto"
           items={items}
           magnification={64}
           panelHeight={62}
+          theme={isDark ? "dark" : "light"}
         />
       </div>
     </>
