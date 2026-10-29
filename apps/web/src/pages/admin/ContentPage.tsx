@@ -85,7 +85,6 @@ function toForm(profile: HeroProfile): ContentForm {
 function validateForm(form: ContentForm): string[] {
   const errors: string[] = [];
   if (!form.subheading.trim()) errors.push(translate("Subjudul (nama lengkap) wajib diisi."));
-  if (!form.description.trim()) errors.push(translate("Deskripsi wajib diisi."));
   form.highlight_skills.forEach((skill, index) => {
     if (!skill.name.trim()) errors.push(translate("Keahlian unggulan #{n} wajib diisi.", { n: index + 1 }));
   });
