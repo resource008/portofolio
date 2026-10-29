@@ -110,3 +110,15 @@ Tag image di `kustomization.yaml` harus **SHA lengkap** commit `main` (`git rev-
 Verifikasi (2026-10-29): ketiga pod `1/1 Running` tanpa restart; `web` → `http://api:3001/api/health` membalas `{"status":"ok"}`. RAM: api 46Mi, postgres 54Mi, web 3Mi.
 
 Service masih `ClusterIP`, jadi belum bisa diakses dari luar. Untuk mengintip: `kubectl port-forward -n portofolio svc/web 8080:8080`.
+
+## Tahap 4: Pintu depan (Traefik Gateway API + Cloudflare)
+
+```
+Browser ──HTTPS──▶ Cloudflare (proxy, sertifikat publik) ──HTTPS :443──▶ Traefik (Gateway) ──▶ web / api
+```
+
+1. DNS dipindah ke Cloudflare (Free). NS di Sumopod diganti ke `aleena`/`armando.ns.cloudflare.com`; Sumopod tetap registrar. Record `A @` → IP VPS, **Proxied**, sehingga IP VPS tidak terlihat.
+2. Traefik bawaan k3s (v3.7) dinyalakan provider Gateway API-nya lewat `deploy/cluster/traefik.yaml` (`HelmChartConfig`). CRD Gateway API sudah ikut k3s.
+3. HTTPS ke origin memakai **Cloudflare Origin Certificate** (ECC, 15 tahun, apex + wildcard), bukan cert-manager, untuk hemat RAM. Sertifikat dan key disimpan di Infisical `portofolio-app/prod/tls` (`TLS_CRT`, `TLS_KEY`) dan disinkronkan operator menjadi Secret `kubernetes.io/tls` `portofolio-tls`.
+4. `deploy/base/gateway.yaml`: listener `http` (8000) dan `https` (8443) Traefik, terpetakan ke 80/443 di node. `deploy/base/routes.yaml`: `/api` → `api:3001`, sisanya → `web:8080`, plus redirect HTTP → HTTPS.
+5. Cloudflare: SSL/TLS **Full (strict)**, **Always Use HTTPS** aktif. Firewall panel provider hanya membuka TCP 443 (port 80 tetap tertutup; redirect dilakukan Cloudflare). Pembatasan 443 hanya untuk IP Cloudflare menyusul di Tahap 7–8.

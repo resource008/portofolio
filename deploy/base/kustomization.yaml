@@ -8,6 +8,8 @@ resources:
   - postgres.yaml
   - api.yaml
   - web.yaml
+  - gateway.yaml
+  - routes.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: portofolio
