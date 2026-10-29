@@ -1519,21 +1519,37 @@ function ProjectListItem({
   );
 }
 
+// Tidak memangkas spasi: spasi di ujung adalah ketikan pengguna, dan memangkasnya
+// membuat DOM ditulis ulang sehingga kursor melompat.
+function stripTrailingBr(html: string): string {
+  return html.replace(/<br\s*\/?>(?=\s*(<\/\w+>\s*)*$)/gi, "");
+}
+
 function sanitizeSingleLineHtml(html: string): string {
-  let clean = html
+  // <br> penanda baris kosong dari browser (di ujung) dibuang, bukan dijadikan spasi.
+  const clean = stripTrailingBr(html)
     .replace(/<br\s*\/?>/gi, " ")
     .replace(/<\/(p|div)[^>]*>\s*<(p|div)[^>]*>/gi, " ")
     .replace(/<\/?(p|div)[^>]*>/gi, "");
   const h2Open = clean.match(/<h2[^>]*>/i);
-  if (!h2Open) return clean.trim();
+  if (!h2Open) return clean;
   const start = clean.indexOf(h2Open[0]);
   const end = clean.indexOf("</h2>", start);
-  if (end === -1) return clean.trim();
+  if (end === -1) return clean;
   const inside = clean.slice(start + h2Open[0].length, end);
   const before = clean.slice(0, start).trim();
   const after = clean.slice(end + "</h2>".length).trim();
-  const merged = (before ? `${before} ` : "") + inside + (after ? ` ${after}` : "");
-  return `<h2>${merged.trim()}</h2>`;
+  if (!before && !after && start === 0 && end + 5 === clean.length) return clean;
+  return `<h2>${before ? `${before} ` : ""}${inside}${after ? ` ${after}` : ""}</h2>`;
+}
+
+function placeCaretAtEnd(el: HTMLElement) {
+  const range = document.createRange();
+  range.selectNodeContents(el.querySelector("h1,h2,h3") ?? el);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel?.removeAllRanges();
+  sel?.addRange(range);
 }
 
 function RichTextBlock({
@@ -1564,9 +1580,13 @@ function RichTextBlock({
   const [tools, setTools] = useState<{ top: number; left: number } | "anchor" | null>(null);
   const [toolsExpanded, setToolsExpanded] = useState(false);
 
+  const seededRef = useRef(false);
   useEffect(() => {
     const el = editableRef.current;
     if (!el) return;
+    // Nilai yang baru saja kita kirim lewat onChange tidak ditulis ulang ke DOM.
+    if (seededRef.current && value === lastValue.current) return;
+    seededRef.current = true;
     // Always seed the DOM from `value` on mount, otherwise existing blocks render empty.
     const seed = singleLine ? sanitizeSingleLineHtml(value) : value;
     if (seed !== el.innerHTML) {
@@ -1595,13 +1615,18 @@ function RichTextBlock({
   function emit() {
     const el = editableRef.current;
     if (!el) return;
+    let html = el.innerHTML;
     if (singleLine) {
-      // Tulis ulang DOM hanya kalau berubah, supaya kursor tidak melompat.
-      const cleaned = sanitizeSingleLineHtml(el.innerHTML);
-      if (cleaned !== el.innerHTML) el.innerHTML = cleaned;
+      html = sanitizeSingleLineHtml(html);
+      // DOM hanya ditulis ulang untuk perubahan struktur (mis. Enter/paste), bukan untuk
+      // <br> penanda di ujung yang ditambahkan browser, supaya kursor tidak melompat.
+      if (html !== stripTrailingBr(el.innerHTML)) {
+        el.innerHTML = html;
+        placeCaretAtEnd(el);
+      }
     }
-    lastValue.current = el.innerHTML;
-    onChange(el.innerHTML);
+    lastValue.current = html;
+    onChange(html);
   }
 
   function refreshTools() {

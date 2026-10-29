@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnnouncementBar } from "@/components/public/HeroSection";
 import { HeaderSearch } from "@/components/public/HeaderSearch";
+import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function BrandLogo({ profile }: { profile?: HeroProfile }) {
   const initial = (profile?.subheading ?? "").charAt(0).toUpperCase();
@@ -127,17 +128,25 @@ export function PublicHeader() {
 
         <div className="flex items-center gap-2.5" data-entrance="toggle">
           {showSearch ? <HeaderSearch /> : null}
-          <button
-            aria-checked={motionEnabled}
-            aria-label={motionEnabled ? "Matikan animasi" : "Nyalakan animasi"}
-            className="grid size-7 shrink-0 place-items-center rounded-full border border-border bg-background/50 text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
-            onClick={() => setMotionEnabled(!motionEnabled)}
-            role="switch"
-            title={motionEnabled ? "Matikan animasi" : "Nyalakan animasi"}
-            type="button"
-          >
-            {motionEnabled ? <PauseIcon className="size-3.5" /> : <PlayIcon className="size-3.5" />}
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <button
+                    aria-checked={motionEnabled}
+                    aria-label={motionEnabled ? "Matikan animasi" : "Nyalakan animasi"}
+                    className="grid size-7 shrink-0 place-items-center rounded-full border border-border bg-background/50 text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
+                    onClick={() => setMotionEnabled(!motionEnabled)}
+                    role="switch"
+                    type="button"
+                  />
+                }
+              >
+                {motionEnabled ? <PauseIcon className="size-3.5" /> : <PlayIcon className="size-3.5" />}
+              </TooltipTrigger>
+              <TooltipPopup>{motionEnabled ? "Matikan animasi" : "Nyalakan animasi"}</TooltipPopup>
+            </Tooltip>
+          </TooltipProvider>
           <button
             aria-checked={isDark}
             aria-label={isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap"}

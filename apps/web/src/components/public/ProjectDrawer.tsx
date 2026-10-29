@@ -33,9 +33,9 @@ export function ProjectDrawer({
       <DrawerPopup className="mx-auto w-full max-w-3xl overflow-hidden has-data-[slot=drawer-bar]:pt-0">
         <DrawerClose
           aria-label="Tutup"
-          className="absolute end-3 top-3 z-20 grid size-9 place-items-center rounded-full border border-white/40 bg-white/45 text-foreground backdrop-blur-md backdrop-saturate-150 transition-colors hover:bg-white/60 dark:border-white/15 dark:bg-black/30 dark:text-white dark:hover:bg-black/45"
+          className="absolute end-3 top-3 z-20 grid size-11 place-items-center rounded-full border border-white/40 bg-white/45 text-foreground backdrop-blur-md backdrop-saturate-150 transition-colors hover:bg-white/60 dark:border-white/15 dark:bg-black/30 dark:text-white dark:hover:bg-black/45"
         >
-          <XMarkIcon className="size-5" />
+          <XMarkIcon className="size-6" />
         </DrawerClose>
         {/* Konten di bawahnya swipe-ignore, jadi pegangan ini yang menangkap gestur tutup. */}
         <DrawerBar className="z-10 h-12 items-start pt-2.5 before:bg-white/80 before:shadow-sm lg:hidden" />

@@ -16,6 +16,6 @@ labels:
 # Images are promoted by CI and tagged with the main commit SHA.
 images:
   - name: ghcr.io/resource008/portofolio-api
-    newTag: 8baa8e1ff3734c589e5e33080d36876a20e1b37d
+    newTag: b9f33bbd638ab31813ac452a732b59fc32dfac33
   - name: ghcr.io/resource008/portofolio-web
-    newTag: 8baa8e1ff3734c589e5e33080d36876a20e1b37d
+    newTag: b9f33bbd638ab31813ac452a732b59fc32dfac33

@@ -10,7 +10,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "motion/react";
 import {
-  ChevronRightIcon,
   ChevronUpIcon,
   CodeBracketIcon,
   SparklesIcon,
@@ -115,11 +114,15 @@ export function AnnouncementTicker({
   const [pillWidth, setPillWidth] = useState<number | null>(null);
   const pillRef = useRef<HTMLDivElement | null>(null);
 
-  const advance = useCallback(() => {
-    setIndex((current) =>
-      messages.length > 1 ? (current + 1) % messages.length : current,
-    );
-  }, [messages.length]);
+  // Satu pesan yang berjalan di-remount lewat `cycle` agar berjalan lagi, bukan tertahan di luar layar.
+  const [cycle, setCycle] = useState(0);
+  const advance = useCallback(
+    (afterRun?: boolean) => {
+      if (messages.length > 1) setIndex((current) => (current + 1) % messages.length);
+      else if (afterRun) setCycle((n) => n + 1);
+    },
+    [messages.length],
+  );
 
   // Add the pill's padding/border so the button isn't clipped at the right edge.
   const handleMeasure = useCallback((contentWidth: number) => {
@@ -154,16 +157,16 @@ export function AnnouncementTicker({
         className={cn(
           bare
             ? "inline-flex h-10 items-center font-medium text-[15px] sm:text-base"
-            : [PILL, "h-10 px-3.5 text-sm"],
-          "min-w-0 max-w-full gap-2 overflow-hidden transition-[width] duration-700 ease-out",
+            : [PILL, "h-10 px-3.5 text-sm transition-[width] duration-700 ease-out"],
+          "min-w-0 max-w-full gap-2 overflow-hidden",
         )}
-        style={pillWidth != null ? { width: `${pillWidth}px` } : undefined}
+        style={!bare && pillWidth != null ? { width: `${pillWidth}px` } : undefined}
       >
         <AnimatePresence mode="wait">
           <TickerMessage
             bare={bare}
             item={current}
-            key={index}
+            key={`${index}-${cycle}`}
             onAdvance={advance}
             onMeasure={handleMeasure}
             onOpenProject={setOpenedProject}
@@ -187,7 +190,7 @@ function TickerMessage({
 }: {
   bare: boolean;
   item: AnnouncementTickerItem;
-  onAdvance: () => void;
+  onAdvance: (afterRun?: boolean) => void;
   onMeasure: (width: number) => void;
   onOpenProject: (project: Project) => void;
 }) {
@@ -195,7 +198,7 @@ function TickerMessage({
   const message = item.text;
   const readDuration = Math.min(30, Math.max(4, message.length / 10));
 
-  const textRef = useRef<HTMLSpanElement | null>(null);
+  const textRef = useRef<HTMLElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [textWidth, setTextWidth] = useState(0);
   const [maxWidth, setMaxWidth] = useState(resolveMaxWidth);
@@ -214,7 +217,7 @@ function TickerMessage({
       const measure = () => {
         const cs = window.getComputedStyle(strip);
         const inner = strip.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-        setMaxWidth(Math.max(80, inner - 28 - (item.project ? 36 : 0)));
+        setMaxWidth(Math.max(80, inner - 28));
       };
       const observer = new ResizeObserver(measure);
       observer.observe(strip);
@@ -224,25 +227,32 @@ function TickerMessage({
     const onResize = () => setMaxWidth(resolveMaxWidth());
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
-  }, [bare, item.project]);
+  }, [bare]);
 
   const viewportWidth = Math.min(textWidth, maxWidth);
   const shouldRun = textWidth > viewportWidth;
   const runDuration = Math.max(readDuration, textWidth / MARQUEE_PX_PER_SECOND);
 
+  // Hover/fokus di tautan proyek menahan pesan: timer dijeda dan sisa waktunya disimpan.
+  const [paused, setPaused] = useState(false);
+  const remainingRef = useRef(readDuration * 1000);
   useEffect(() => {
-    if (shouldRun) return;
-    const timer = setTimeout(onAdvance, readDuration * 1000);
-    return () => clearTimeout(timer);
-  }, [shouldRun, readDuration, onAdvance]);
+    if (shouldRun || paused) return;
+    const startedAt = Date.now();
+    const timer = setTimeout(() => onAdvance(), Math.max(1000, remainingRef.current));
+    return () => {
+      clearTimeout(timer);
+      remainingRef.current -= Date.now() - startedAt;
+    };
+  }, [shouldRun, paused, onAdvance]);
 
   return (
     <motion.div
       ref={rootRef}
-      animate={{ opacity: 1, y: 0, transition: { type: "spring", duration: 0.8, bounce: 0.25, delay: 0.3 } }}
+      animate={{ opacity: 1, y: 0, transition: { type: "spring", duration: 0.85, bounce: 0.35, delay: 0.3 } }}
       className="flex w-max items-center gap-2"
       exit={{ opacity: 0, y: -12, transition: { duration: 0.4, ease: "easeIn" } }}
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 18 }}
     >
       {bare ? null : (
         <span
@@ -265,44 +275,46 @@ function TickerMessage({
             "flex w-max items-center",
             shouldRun && "animate-marquee-once",
           )}
-          onAnimationEnd={shouldRun ? () => onAdvance() : undefined}
+          onAnimationEnd={shouldRun ? () => onAdvance(true) : undefined}
           style={
             shouldRun
               ? {
                   animationDuration: `${runDuration}s`,
                   animationDelay: `${TICKER_HOLD_SECONDS}s`,
+                  animationPlayState: paused ? "paused" : "running",
                 }
               : undefined
           }
         >
-          <span className="whitespace-nowrap" ref={textRef}>
-            {message}
-          </span>
+          {item.project ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <button
+                      className="whitespace-nowrap underline-offset-4 hover:underline focus-visible:underline"
+                      onBlur={() => setPaused(false)}
+                      onClick={() => item.project && onOpenProject(item.project)}
+                      onFocus={() => setPaused(true)}
+                      onMouseEnter={() => setPaused(true)}
+                      onMouseLeave={() => setPaused(false)}
+                      ref={textRef as React.Ref<HTMLButtonElement>}
+                      type="button"
+                    />
+                  }
+                >
+                  {message}
+                </TooltipTrigger>
+                <TooltipPopup>Lihat postingan</TooltipPopup>
+              </Tooltip>
+            </TooltipProvider>
+          ) : (
+            <span className="whitespace-nowrap" ref={textRef}>
+              {message}
+            </span>
+          )}
         </div>
       </div>
-
-      {item.project ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <button
-                  aria-label={`Lihat postingan ${message}`}
-                  className={cn(
-                    "grid shrink-0 place-items-center rounded-full border border-neutral-900/10 text-neutral-700 transition-colors hover:bg-neutral-900/5 hover:text-neutral-900 dark:border-white/10 dark:text-neutral-300 dark:hover:bg-white/10 dark:hover:text-neutral-50",
-                    "size-7",
-                  )}
-                  onClick={() => item.project && onOpenProject(item.project)}
-                  type="button"
-                />
-              }
-            >
-              <ChevronRightIcon className="size-3.5" />
-            </TooltipTrigger>
-            <TooltipPopup>Lihat postingan</TooltipPopup>
-          </Tooltip>
-        </TooltipProvider>
-      ) : null}
     </motion.div>
   );
 }
@@ -459,10 +471,10 @@ export function AnnouncementBar() {
             <AnimatePresence initial={false} mode="wait">
               {Icon ? (
                 <motion.span
-                  animate={{ opacity: 1, y: 0, transition: { type: "spring", duration: 0.8, bounce: 0.25, delay: 0.3 } }}
+                  animate={{ opacity: 1, y: 0, transition: { type: "spring", duration: 0.85, bounce: 0.35, delay: 0.3 } }}
                   className="absolute inset-0"
                   exit={{ opacity: 0, y: -12, transition: { duration: 0.4, ease: "easeIn" } }}
-                  initial={{ opacity: 0, y: 16 }}
+                  initial={{ opacity: 0, y: 18 }}
                   key={item?.label}
                 >
                   <Icon aria-label={item?.label} className="size-5" />
