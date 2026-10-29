@@ -70,3 +70,17 @@ Tambalan sementara untuk temuan Trivy. Hapus begitu paket induknya memakai versi
 | `@vercel/cli-config>zod` → `^4.6.7` | `@vercel/cli-config` (via `@vercel/blob` → `@vercel/oidc`) mengunci `zod@4.1.11`, kena CVE-2023-54404 |
 
 `.npmrc` memakai `auto-install-peers=false` supaya peer opsional yang tidak dipakai (mis. `next` milik `better-auth`) tidak ikut terpasang. Peer wajib ditulis eksplisit, contohnya `react-is` untuk `recharts` di `apps/web`.
+
+## Tahap 3b: k3s di VPS (manual, nanti dipindah ke Ansible di Tahap 8)
+
+VPS: Ubuntu 24.04, 2 vCPU, 1.9 GB RAM + 1.9 GB swap, user `ubuntu`, SSH key only, ufw hanya SSH (`LIMIT`).
+
+1. Cek bentrok alamat: `ip route` hanya berisi subnet privat provider yang tidak tumpang tindih dengan `10.42`/`10.43`, jadi CIDR default k3s (`10.42.0.0/16` pod, `10.43.0.0/16` service) dipakai apa adanya.
+2. Firewall untuk jaringan k3s, berbasis interface (bukan IP), dibuat sebelum install:
+   - `ufw allow in on cni0 comment 'k3s pods to node'`
+   - `ufw route allow in on cni0 comment 'k3s pod egress'`
+   - `ufw route allow out on cni0 comment 'k3s pod ingress'`
+3. Install: `curl -sfL https://get.k3s.io | sh -s - --secrets-encryption` (v1.36.5+k3s1). Cek: `k3s secrets-encrypt status` → Enabled, AES-CBC.
+4. Port 6443 tidak dibuka. `kubectl` dari laptop lewat SSH tunnel: kubeconfig `/etc/rancher/k3s/k3s.yaml` disalin (dari Git Bash, bukan PowerShell, agar UTF-8) ke `~/.kube/portofolio.yaml`; `~/.ssh/config` punya alias `portofolio-k8s` dengan `LocalForward 6443 127.0.0.1:6443` dan `ServerAliveInterval 30`.
+
+RAM setelah k3s kosong: used 1.0 GB, available ±876 MB.
