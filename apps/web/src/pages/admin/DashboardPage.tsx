@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChatBubbleLeftIcon, ExclamationCircleIcon, HandThumbUpIcon, PhotoIcon, RectangleStackIcon, ServerIcon, ShareIcon } from "@heroicons/react/24/outline";
+import { ChatBubbleLeftIcon, ExclamationCircleIcon, HandThumbUpIcon, PhotoIcon, RectangleStackIcon, ServerIcon } from "@heroicons/react/24/outline";
 import type { DashboardStats } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
 import { useLanguage } from "@/lib/language";
@@ -67,7 +67,6 @@ export default function DashboardPage() {
 
   const stats = [
     { label: t("Jumlah Suka"), value: summary?.total_likes ?? 0, icon: HandThumbUpIcon },
-    { label: t("Dibagikan"), value: summary?.total_shares ?? 0, icon: ShareIcon },
     { label: t("Total Proyek"), value: summary?.total_projects ?? 0, icon: RectangleStackIcon },
     { label: t("Pesan Belum Dibaca"), value: summary?.total_unread_messages ?? 0, icon: ChatBubbleLeftIcon },
   ];
@@ -91,7 +90,7 @@ export default function DashboardPage() {
         </Alert>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-3">
         {stats.map(({ label, value, icon: Icon }) => (
           <Card key={label}>
             <CardPanel>

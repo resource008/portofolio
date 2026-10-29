@@ -208,7 +208,6 @@ export interface NotificationItem {
 
 export interface DashboardSummary {
   total_likes: number;
-  total_shares: number;
   total_projects: number;
   total_photos: number;
   total_unread_messages: number;
