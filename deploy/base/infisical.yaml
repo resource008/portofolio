@@ -1,0 +1,51 @@
+# Infisical Operator wiring: where to connect, how to log in, what to sync.
+# The only manual secret is universal-auth-credentials (k8s-prod identity), created once with kubectl.
+# The operator's CRDs require an explicit namespace on every reference.
+apiVersion: secrets.infisical.com/v1beta1
+kind: InfisicalConnection
+metadata:
+  name: infisical-cloud
+  namespace: portofolio
+spec:
+  address: https://app.infisical.com
+---
+apiVersion: secrets.infisical.com/v1beta1
+kind: InfisicalAuth
+metadata:
+  name: k8s-prod
+  namespace: portofolio
+spec:
+  infisicalConnectionRef:
+    name: infisical-cloud
+    namespace: portofolio
+  method: universal
+  universal:
+    clientIdRef:
+      name: universal-auth-credentials
+      namespace: portofolio
+      key: clientId
+    clientSecretRef:
+      name: universal-auth-credentials
+      namespace: portofolio
+      key: clientSecret
+---
+apiVersion: secrets.infisical.com/v1beta1
+kind: InfisicalStaticSecret
+metadata:
+  name: app-secrets
+  namespace: portofolio
+spec:
+  infisicalAuthRef:
+    name: k8s-prod
+    namespace: portofolio
+  syncOptions:
+    refreshInterval: 60s
+  sources:
+    - projectId: 58e7c045-e1a2-4caa-99cc-d1f60aef7630
+      environmentSlug: prod
+      secretPath: /
+  targets:
+    - name: app-secrets
+      namespace: portofolio
+      kind: Secret
+      creationPolicy: Owner
