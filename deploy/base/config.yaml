@@ -1,0 +1,12 @@
+# Non-secret settings. Secrets come from app-secrets (Infisical).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  PORT: "3001"
+  WEB_ORIGIN: https://portofolio-aguspranata.my.id
+  BETTER_AUTH_URL: https://portofolio-aguspranata.my.id
+  ADMIN_GITHUB_USERNAMES: resource008
+  # Traefik sits in front of the api, so X-Forwarded-For is trustworthy.
+  TRUST_PROXY: "true"

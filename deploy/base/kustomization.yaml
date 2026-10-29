@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: portofolio
+resources:
+  - namespace.yaml
+  - infisical.yaml
+  - config.yaml
+  - postgres.yaml
+  - api.yaml
+  - web.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: portofolio
+# Images are promoted by CI and tagged with the main commit SHA.
+images:
+  - name: ghcr.io/resource008/portofolio-api
+    newTag: 01deb2886321db3eb488487ea8c25f7b016567fc
+  - name: ghcr.io/resource008/portofolio-web
+    newTag: 01deb2886321db3eb488487ea8c25f7b016567fc

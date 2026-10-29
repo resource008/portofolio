@@ -91,3 +91,22 @@ RAM setelah k3s kosong: used 1.0 GB, available ±876 MB.
 2. Kunci pembuka, satu-satunya secret yang dibuat manual: `kubectl create secret generic universal-auth-credentials -n portofolio` dengan key `clientId` dan `clientSecret` milik identity `k8s-prod`. Nilai dibaca dengan `read -rsp` supaya tidak tampil di layar maupun di history. Client ID berupa UUID, jadi panjangnya harus 36 byte.
 3. `kubectl apply -f deploy/base/infisical.yaml` membuat `InfisicalConnection`, `InfisicalAuth`, dan `InfisicalStaticSecret` (API `v1beta1`; `InfisicalSecret` v1alpha1 sudah deprecated). Setiap `...Ref` wajib menulis `namespace`.
 4. Hasil: Secret `app-secrets` berisi 6 key `prod`, disinkronkan ulang setiap 60 detik. Panjang `DATABASE_URL` cocok dengan referensi `${POSTGRES_PASSWORD}` yang sudah ter-expand.
+
+## Tahap 3d–3e: Aplikasi di k3s (Kustomize)
+
+`kubectl apply -k deploy/base` memasang semuanya di namespace `portofolio`:
+
+| Resource | Catatan |
+|---|---|
+| `postgres` (StatefulSet + headless Service) | `postgres:18.6-alpine`, UID 70, PVC `local-path` di-mount ke `/var/lib/postgresql`. Ukuran 5Gi tidak ditegakkan oleh `local-path` |
+| `api` (Deployment + Service :3001) | Probe `/api/health`, migrasi jalan saat boot, auto-reload saat `app-secrets` berubah |
+| `web` (Deployment + Service :8080) | nginx-unprivileged UID 101 |
+| `app-config` (ConfigMap) | Nilai non-rahasia: domain, admin, `TRUST_PROXY` |
+
+Semua container non-root, `allowPrivilegeEscalation: false`, capability di-drop, seccomp `RuntimeDefault`. `api` dan `web` memakai root filesystem read-only dengan `/tmp` emptyDir. Hanya RAM yang diberi limit; CPU tidak, supaya tidak di-throttle.
+
+Tag image di `kustomization.yaml` harus **SHA lengkap** commit `main` (`git rev-parse origin/main`), karena CI men-tag dengan `$GITHUB_SHA`. SHA pendek berujung `ErrImagePull`.
+
+Verifikasi (2026-10-29): ketiga pod `1/1 Running` tanpa restart; `web` → `http://api:3001/api/health` membalas `{"status":"ok"}`. RAM: api 46Mi, postgres 54Mi, web 3Mi.
+
+Service masih `ClusterIP`, jadi belum bisa diakses dari luar. Untuk mengintip: `kubectl port-forward -n portofolio svc/web 8080:8080`.
