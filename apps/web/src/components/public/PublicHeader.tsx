@@ -2,17 +2,15 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { MoonIcon, PauseIcon, PlayIcon, SunIcon } from "@heroicons/react/24/outline";
+import { MoonIcon, SunIcon } from "@heroicons/react/24/outline";
 import type { HeroProfile } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
 import { resolveTheme, useTheme } from "@/lib/theme";
 import { consumeHeaderEntrance, ENTRANCE, useIntroDone } from "@/lib/intro";
-import { getMotionEnabled, useMotionEnabled } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnnouncementBar } from "@/components/public/HeroSection";
 import { HeaderSearch } from "@/components/public/HeaderSearch";
-import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 function BrandLogo({ profile }: { profile?: HeroProfile }) {
   const initial = (profile?.subheading ?? "").charAt(0).toUpperCase();
@@ -34,7 +32,6 @@ export function PublicHeader() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isHome = pathname === "/";
-  const { motionEnabled, setMotionEnabled } = useMotionEnabled();
   const showSearch = pathname === "/projects" || pathname.startsWith("/projects/");
   const { theme, setTheme } = useTheme();
   const { data: profile } = useQuery({
@@ -58,7 +55,7 @@ export function PublicHeader() {
     const root = headerRef.current;
     if (!root || !introDone) return;
     entranceAllowed.current ??= consumeHeaderEntrance();
-    if (!entranceAllowed.current || !getMotionEnabled()) return;
+    if (!entranceAllowed.current) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const ctx = gsap.context(() => {
@@ -128,25 +125,6 @@ export function PublicHeader() {
 
         <div className="flex items-center gap-2.5" data-entrance="toggle">
           {showSearch ? <HeaderSearch /> : null}
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <button
-                    aria-checked={motionEnabled}
-                    aria-label={motionEnabled ? "Matikan animasi" : "Nyalakan animasi"}
-                    className="grid size-7 shrink-0 place-items-center rounded-full border border-border bg-background/50 text-muted-foreground backdrop-blur-md transition-colors duration-200 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background"
-                    onClick={() => setMotionEnabled(!motionEnabled)}
-                    role="switch"
-                    type="button"
-                  />
-                }
-              >
-                {motionEnabled ? <PauseIcon className="size-3.5" /> : <PlayIcon className="size-3.5" />}
-              </TooltipTrigger>
-              <TooltipPopup>{motionEnabled ? "Matikan animasi" : "Nyalakan animasi"}</TooltipPopup>
-            </Tooltip>
-          </TooltipProvider>
           <button
             aria-checked={isDark}
             aria-label={isDark ? "Aktifkan mode terang" : "Aktifkan mode gelap"}
