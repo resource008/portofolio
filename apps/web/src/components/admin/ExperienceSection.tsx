@@ -6,7 +6,7 @@ import type { Experience, ExperienceContent } from "@portofolio/shared";
 import { apiGet, apiSend } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/language";
-import { useIsMobile } from "@/hooks/use-media-query";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import {
   Accordion,
   AccordionItem,
@@ -65,7 +65,7 @@ export default function ExperienceSection({
 
   const [pendingDelete, setPendingDelete] = useState<Experience | null>(null);
   const [preview, setPreview] = useState<{ photos: string[]; index: number } | null>(null);
-  const isMobile = useIsMobile();
+  const canSwipe = useMediaQuery("max-lg");
   const [expandedIds, setExpandedIds] = useState<Experience["id"][]>([]);
   const toggleExpanded = (id: Experience["id"]) =>
     setExpandedIds((prev) =>
@@ -150,7 +150,7 @@ export default function ExperienceSection({
                       </SwipeActionButton>
                     </>
                   }
-                  enabled={isMobile}
+                  enabled={canSwipe}
                 >
                 <Accordion
                   onValueChange={() => toggleExpanded(item.id)}
@@ -200,7 +200,7 @@ export default function ExperienceSection({
                   </AccordionTrigger>
                   </div>
 
-                  {!isMobile && (
+                  {!canSwipe && (
                     <>
                       <Button
                         aria-label={t("Ubah")}
