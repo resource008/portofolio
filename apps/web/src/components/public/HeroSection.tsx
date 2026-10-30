@@ -422,9 +422,9 @@ export function HeroTechBar() {
   if (names.length === 0) return null;
 
   return (
-    <section className="border-y border-neutral-900/10 bg-neutral-900 py-10 lg:hidden dark:border-white/10 dark:bg-neutral-900">
+    <section className="border-y border-neutral-900/10 bg-white/60 py-10 lg:hidden dark:border-white/10 dark:bg-neutral-900">
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 sm:px-6">
-        <span className="ms-2 inline-flex -rotate-[15deg] items-center rounded-full border border-white/20 px-4 py-1.5 font-medium text-neutral-100 text-sm">
+        <span className="ms-2 inline-flex -rotate-[15deg] items-center rounded-full border border-neutral-900/15 px-4 py-1.5 font-medium text-neutral-700 text-sm dark:border-white/20 dark:text-neutral-100">
           Tech Stack
         </span>
         <MobileTechBar names={names} />
