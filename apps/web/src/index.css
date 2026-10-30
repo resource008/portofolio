@@ -386,7 +386,7 @@ html[data-project-editor="full"] [data-topbar-anim] {
   display: none;
 }
 
-/* Animasi ganti tema (AnimatedThemeToggler): matikan crossfade bawaan, biarkan lingkaran yang membuka tema baru. */
+/* Animasi ganti tema (AnimatedThemeToggler): fade dikendalikan dari JS, animasi bawaan dimatikan. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
