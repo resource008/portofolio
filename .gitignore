@@ -43,3 +43,6 @@ Thumbs.db
 /openapi.yaml
 /index.html
 /API_DOCUMENTATION.md
+
+# Gambar sumber resolusi tinggi (dipakai untuk membuat WebP di apps/web/src/assets); tidak didistribusikan
+/assets-src/

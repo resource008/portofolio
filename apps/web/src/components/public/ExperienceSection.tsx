@@ -10,7 +10,7 @@ import { ScrollTimeline } from "@/components/public/ScrollTimeline";
 import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 import { PhotoLightbox } from "@/components/public/PhotoLightbox";
-import giraffeLaptop from "@/assets/illustrations/giraffe-laptop.svg";
+import giraffeLaptop from "@/assets/illustrations/giraffe-laptop.webp";
 
 function SkillPill({ name }: { name: string }) {
   const logo = resolveTechLogo(name);

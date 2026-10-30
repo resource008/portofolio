@@ -1,6 +1,4 @@
 import { createBrowserRouter, Navigate } from "react-router-dom";
-import AdminLayout from "../components/admin/AdminLayout";
-import ProtectedRoute from "../components/ProtectedRoute";
 import HomePage from "../pages/public/HomePage";
 import PublicLayout from "../components/public/PublicLayout";
 import NotFoundPage from "../pages/NotFoundPage";
@@ -33,11 +31,8 @@ export const router = createBrowserRouter([
   },
   {
     path: "/admin",
-    element: (
-      <ProtectedRoute>
-        <AdminLayout />
-      </ProtectedRoute>
-    ),
+    // Lazy: kode admin (layout, GSAP, Better Auth) tidak ikut diunduh di halaman publik.
+    lazy: () => import("../components/admin/AdminRoot").then((m) => ({ Component: m.default })),
     hydrateFallbackElement: <AdminRouteFallback />,
     children: [
       {
