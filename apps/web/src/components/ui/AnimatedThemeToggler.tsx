@@ -6,6 +6,15 @@ import { cn } from "@/lib/utils";
 
 // Diadaptasi dari Magic UI AnimatedThemeToggler: tema baru "terbuka" sebagai lingkaran
 // dari tombol lewat View Transitions API. Memakai useTheme proyek, bukan class/localStorage sendiri.
+function largeViewportHeight(): number {
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:100lvh;visibility:hidden;pointer-events:none";
+  document.body.appendChild(probe);
+  const value = probe.getBoundingClientRect().height;
+  probe.remove();
+  return value;
+}
+
 export function AnimatedThemeToggler({
   className,
   duration = 550,
@@ -25,13 +34,16 @@ export function AnimatedThemeToggler({
     }
 
     // Ukur posisi tombol saat diklik, sebelum DOM berubah (di HP header bisa bergeser setelahnya).
-    // Dalam persen, bukan piksel: di browser HP (mis. Chrome Android) lapisan view transition
-    // bisa berbeda ukuran/posisi dari layar yang terlihat, sehingga koordinat piksel meleset.
+    // Titik awal = pusat tombol saat diklik (ikut ke mana pun tombolnya, mis. header mengambang).
     const { top, left, width, height } = button.getBoundingClientRect();
-    const x = `${(((left + width / 2) / window.innerWidth) * 100).toFixed(2)}%`;
-    const y = `${(((top + height / 2) / window.innerHeight) * 100).toFixed(2)}%`;
-    // 150% (dari diagonal/√2) selalu menutup seluruh lapisan dari titik mana pun.
-    const radius = "150%";
+    const cx = left + width / 2;
+    const cy = top + height / 2;
+    const x = `${cx}px`;
+    const y = `${cy}px`;
+    // Di HP lapisan transisi setinggi layar penuh (bar alamat tersembunyi), jadi jari-jari
+    // dihitung dari tinggi itu agar lingkaran tetap menutup seluruh layar.
+    const fullHeight = Math.max(window.innerHeight, largeViewportHeight());
+    const radius = `${Math.hypot(Math.max(cx, window.innerWidth - cx), Math.max(cy, fullHeight - cy))}px`;
 
     // Matikan transisi CSS sementara agar tampilan baru dipotret dengan warna final (tidak berkedip).
     const root = document.documentElement;
@@ -43,7 +55,7 @@ export function AnimatedThemeToggler({
     try {
       await transition.ready;
       root.animate(
-        { clipPath: [`circle(0% at ${x} ${y})`, `circle(${radius} at ${x} ${y})`] },
+        { clipPath: [`circle(0px at ${x} ${y})`, `circle(${radius} at ${x} ${y})`] },
         {
           duration,
           easing: "cubic-bezier(0.4, 0, 0.2, 1)",
