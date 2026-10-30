@@ -385,3 +385,10 @@ html[data-project-editor="full"] [data-transition-frame] {
 html[data-project-editor="full"] [data-topbar-anim] {
   display: none;
 }
+
+/* Animasi ganti tema (AnimatedThemeToggler): matikan crossfade bawaan, biarkan lingkaran yang membuka tema baru. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
