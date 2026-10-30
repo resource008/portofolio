@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarDateRangeIcon, CalendarIcon, LinkIcon, RectangleStackIcon } from "@heroicons/react/24/outline";
+import { CalendarDateRangeIcon, GlobeAltIcon, LinkIcon, RectangleStackIcon, TagIcon } from "@heroicons/react/24/outline";
 import type { ProjectBlock, ProjectBlockAlign, ProjectDetail, ProjectGalleryItem } from "@portofolio/shared";
 import { safeHref, sanitizeHtml } from "@/lib/sanitize";
 import { resolveTechLogo } from "@/lib/tech-logo";
@@ -201,61 +201,119 @@ function ContentBlock({ block, bleed = false }: { block: ProjectBlock; bleed?: b
 function TechStackRow({ stacks, logoOnly }: { stacks: string[]; logoOnly: boolean }) {
   const trackRef = useRef<HTMLDivElement>(null);
 
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [overflowing, setOverflowing] = useState(false);
+
+  // Marquee hanya bila daftar tidak muat; diukur dari salinan pertama.
+  useEffect(() => {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track) return;
+    const measure = () => {
+      const first = track.firstElementChild as HTMLElement | null;
+      setOverflowing(Boolean(first) && first!.scrollWidth > viewport.clientWidth);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(viewport);
+    return () => observer.disconnect();
+  }, [stacks]);
+
+  // Putaran tanpa jeda (dua salinan, geser -50%); hover memperlambat lalu berhenti secara halus.
   useEffect(() => {
     const track = trackRef.current;
-    if (!track || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-    let current: Animation | null = null;
-    let timer = 0;
-    let hovered = false;
-    let stopped = false;
-
-    const cycle = () => {
-      if (stopped) return;
-      const distance = track.scrollWidth;
-      track.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400, easing: "ease-out" });
-      timer = window.setTimeout(() => {
-        current = track.animate(
-          [{ transform: "translateX(0)" }, { transform: `translateX(-${distance}px)` }],
-          { duration: (distance / 40) * 1000, easing: "linear" },
-        );
-        if (hovered) current.pause();
-        current.onfinish = cycle;
-      }, 1000);
+    if (!track || !overflowing || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const width = track.scrollWidth / 2;
+    const anim = track.animate(
+      [{ transform: "translateX(0)" }, { transform: "translateX(-50%)" }],
+      { duration: (width / 32) * 1000, iterations: Infinity, easing: "linear" },
+    );
+    let frame = 0;
+    const rampTo = (target: number) => {
+      cancelAnimationFrame(frame);
+      const step = () => {
+        const rate = anim.playbackRate + (target - anim.playbackRate) * 0.12;
+        anim.updatePlaybackRate(Math.abs(rate - target) < 0.01 ? target : rate);
+        if (anim.playbackRate !== target) frame = requestAnimationFrame(step);
+      };
+      frame = requestAnimationFrame(step);
     };
-    cycle();
-
-    const pause = () => {
-      hovered = true;
-      current?.pause();
-    };
-    const play = () => {
-      hovered = false;
-      if (current?.playState === "paused") current.play();
-    };
-    track.addEventListener("pointerenter", pause);
-    track.addEventListener("pointerleave", play);
+    const slow = () => rampTo(0);
+    const resume = () => rampTo(1);
+    track.addEventListener("pointerenter", slow);
+    track.addEventListener("pointerleave", resume);
     return () => {
-      stopped = true;
-      window.clearTimeout(timer);
-      current?.cancel();
-      track.removeEventListener("pointerenter", pause);
-      track.removeEventListener("pointerleave", play);
+      cancelAnimationFrame(frame);
+      anim.cancel();
+      track.removeEventListener("pointerenter", slow);
+      track.removeEventListener("pointerleave", resume);
     };
-  }, [stacks]);
+  }, [overflowing, stacks]);
+
+  const list = (hidden: boolean) => (
+    <div aria-hidden={hidden || undefined} className="flex shrink-0 items-center gap-1.5 pe-1.5">
+      {stacks.map((stack) => (
+        <span className="shrink-0" key={stack}>
+          <TechPill logoOnly={logoOnly} name={stack} />
+        </span>
+      ))}
+    </div>
+  );
 
   return (
     <TooltipProvider>
-      <div className="-mx-1 overflow-hidden px-1 py-1">
-        <div className="flex w-max items-center gap-1.5" ref={trackRef}>
-          {stacks.map((stack) => (
-            <span className="shrink-0" key={stack}>
-              <TechPill logoOnly={logoOnly} name={stack} />
-            </span>
-          ))}
+      <div
+        className={cn(
+          "-mx-1 overflow-hidden px-1 py-1",
+          overflowing &&
+            "[mask-image:linear-gradient(to_right,transparent,black_1.5rem,black_calc(100%-1.5rem),transparent)]",
+        )}
+        ref={viewportRef}
+      >
+        <div className="flex w-max" ref={trackRef}>
+          {list(false)}
+          {overflowing ? list(true) : null}
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+function ProjectMetaRow({ project, className }: { project: ProjectDetail; className?: string }) {
+  const pill = "inline-flex items-center gap-1.5 text-muted-foreground text-sm";
+  const published = project.is_published && project.published_at;
+  if (!project.category && !project.date_range && !published && project.is_published) return null;
+  return (
+    <div className={cn("flex flex-wrap items-center gap-x-4 gap-y-1.5", className)}>
+      {project.category ? (
+        <span className={pill}>
+          <TagIcon className="size-4" />
+          {project.category}
+        </span>
+      ) : null}
+      {project.date_range ? (
+        <span className={cn(pill, "tabular-nums")}>
+          <CalendarDateRangeIcon className="size-4" />
+          {project.date_range}
+        </span>
+      ) : null}
+      {published ? (
+        <span className={pill}>
+          <GlobeAltIcon className="size-4" />
+          <time dateTime={project.published_at!}>
+            {new Date(project.published_at!).toLocaleDateString("id-ID", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </time>
+        </span>
+      ) : !project.is_published ? (
+        <span className={cn(pill, "text-warning-foreground")}>Draf</span>
+      ) : null}
+    </div>
   );
 }
 
@@ -287,7 +345,7 @@ export function ProjectDetailBody({
           />
         )}
         {project.category || project.date_range ? (
-          <div className="absolute start-3 end-14 top-3 z-10 flex flex-wrap items-center gap-1.5">
+          <div className="absolute start-3 end-14 top-3 z-10 hidden flex-wrap items-center gap-1.5 lg:flex">
             {project.category ? (
               <span className={glassPillClass}>
                 {project.category}
@@ -303,10 +361,10 @@ export function ProjectDetailBody({
         ) : null}
         <ProjectActions className="absolute end-3 bottom-3 z-10" key={project.id} project={project} />
         {project.published_at || !project.is_published ? (
-          <div className="absolute start-3 bottom-3 z-10 max-w-[calc(100%-10rem)]">
+          <div className="absolute start-3 bottom-3 z-10 hidden max-w-[calc(100%-10rem)] lg:block">
             {project.is_published && project.published_at ? (
               <span className={glassPillClass}>
-                <CalendarIcon className="size-4" />
+                <GlobeAltIcon className="size-4" />
                 <time dateTime={project.published_at}>
                   {new Date(project.published_at).toLocaleDateString("id-ID", {
                     day: "numeric",
@@ -323,10 +381,14 @@ export function ProjectDetailBody({
       </div>
 
       <header className="mt-8">
+        {/* Layar kecil-sedang: info proyek di dalam konten (di atas judul), bukan di atas cover. */}
+        <ProjectMetaRow className="mb-3 lg:hidden" project={project} />
+        <h1 className="font-bold text-3xl tracking-tight sm:text-4xl">{project.title}</h1>
         {project.tech_stacks.length > 0 ? (
-<TechStackRow logoOnly={bleed} stacks={project.tech_stacks} />
+          <div className="mt-3">
+            <TechStackRow logoOnly={bleed} stacks={project.tech_stacks} />
+          </div>
         ) : null}
-        <h1 className="mt-3 font-bold text-3xl tracking-tight sm:text-4xl">{project.title}</h1>
       </header>
 
       {project.content.length > 0 ? (
