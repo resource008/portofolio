@@ -1,0 +1,8 @@
+# Portofolio
+
+> Website portofolio pribadi berisi proyek, pengalaman kerja, pendidikan, dan pencapaian di bidang pengembangan web dan perangkat lunak.
+
+## Halaman
+
+- [Beranda](https://portofolio-aguspranata.my.id/): profil singkat, pendidikan & pencapaian, pengalaman, dan kontak
+- [Proyek](https://portofolio-aguspranata.my.id/projects): daftar proyek beserta detail, teknologi, dan periode pengerjaan

@@ -1,7 +1,6 @@
 import { useLayoutEffect, type RefObject } from "react";
 import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
-import { ENTRANCE } from "@/lib/intro";
 
 gsap.registerPlugin(SplitText);
 
@@ -27,7 +26,7 @@ export function useHeroEntrance(
       // Kembalikan DOM teks ke bentuk asli agar React tetap memegang node-nya.
       const tl = gsap.timeline({
         defaults: { ease: "expo.out", duration: 1.1 },
-        delay: ENTRANCE.content,
+
         onComplete: () => {
           splits.forEach((split) => split.revert());
           root.dataset.heroDone = "";
@@ -69,10 +68,10 @@ export function useHeroEntrance(
             autoAlpha: 0,
             rotate: (i: number) => (i % 2 === 0 ? -7 : 6),
             ease: "back.out(2.2)",
-            duration: 0.7,
-            stagger: 0.06,
+            duration: 0.5,
+            stagger: 0.05,
           },
-          0.45,
+          0,
         );
       }
 
@@ -86,10 +85,10 @@ export function useHeroEntrance(
             y: 14,
             autoAlpha: 0,
             stagger: 0.08,
-            duration: 0.9,
+            duration: 0.7,
             ease: "power3.out",
           },
-          0.6,
+          0.15,
         );
       }
 

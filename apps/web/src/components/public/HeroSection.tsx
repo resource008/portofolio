@@ -589,7 +589,7 @@ export function HeroSection() {
                   {heading && (
                     <span
                       data-hero="heading"
-                      className="block font-medium text-[clamp(1.0625rem,0.9rem+0.5vw,1.25rem)] text-neutral-500 tracking-normal dark:text-neutral-400"
+                      className="block font-medium text-[clamp(1.0625rem,0.9rem+0.5vw,1.25rem)] text-neutral-600 tracking-normal dark:text-neutral-400"
                     >
                       {heading}
                     </span>
@@ -661,7 +661,7 @@ export function HeroSection() {
 
         <motion.div
           animate={{ opacity: scrolled ? 0 : 1 }}
-          className="scroll-hint absolute inset-x-0 bottom-4 flex flex-col items-center gap-1.5 text-neutral-500 pointer-events-none dark:text-neutral-400"
+          className="scroll-hint absolute inset-x-0 bottom-4 flex flex-col items-center gap-1.5 text-neutral-600 pointer-events-none dark:text-neutral-400"
           initial={false}
           transition={{ duration: 0.35, ease: "easeOut" }}
         >
