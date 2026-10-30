@@ -392,3 +392,11 @@ html[data-project-editor="full"] [data-topbar-anim] {
   animation: none;
   mix-blend-mode: normal;
 }
+html.theme-switching *,
+html.theme-switching *::before,
+html.theme-switching *::after {
+  transition: none !important;
+}
+::view-transition-group(root) {
+  animation-duration: 0s;
+}
