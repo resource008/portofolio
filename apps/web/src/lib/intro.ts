@@ -1,23 +1,6 @@
-import { useSyncExternalStore } from "react";
-
-let done = false;
-const listeners = new Set<() => void>();
-
-export function markIntroDone(): void {
-  if (done) return;
-  done = true;
-  listeners.forEach((listener) => listener());
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
+// Tidak ada layar intro lagi, jadi entrance langsung boleh diputar.
 export function useIntroDone(): boolean {
-  return useSyncExternalStore(subscribe, () => done, () => true);
+  return true;
 }
 
 export const ENTRANCE = { header: 0, announce: 0.2, content: 0.35 } as const;

@@ -5,15 +5,18 @@ Website portofolio pribadi lengkap dengan CMS. Satu aplikasi React melayani hala
 ## Fitur
 
 **Halaman publik**
-- Hero dengan running announcement, Education & Achievement, Experience, Projects, dan form Contact
-- Halaman proyek dengan drawer detail, tombol like & share beranimasi
-- Mode terang/gelap, kursor custom, dan animasi masuk (GSAP + Motion)
+- Hero yang menyesuaikan ukuran layar, dengan running announcement; Education & Achievement, Experience (timeline dengan bar progres scroll), Projects, dan form Contact
+- Halaman proyek dengan pencarian, drawer detail, serta tombol like & share beranimasi
+- Dock navigasi, mode terang/gelap, kursor custom, dan animasi masuk (GSAP + Motion) yang menghormati pengaturan "kurangi gerakan" perangkat
+- Ilustrasi WebP ringan dan kode admin yang dimuat terpisah (lazy) agar halaman publik cepat
 
 **Panel admin (CMS)**
 - Login dengan GitHub (hanya username yang diizinkan)
-- Kelola konten setiap section, proyek (draf/terbit, auto-save), announcement, dan tautan sosial media
+- Kelola konten setiap section, proyek, pendidikan, dan pengalaman dengan status draf/terbit (draf otomatis tersimpan saat keluar form)
+- Editor proyek berbasis blok: cover wajib sebelum menambah blok atau mempublikasikan, layar penuh di HP
+- Kelola announcement dan tautan sosial media; aksi ubah/hapus lewat geser (swipe) di HP dan tablet
 - Inbox pesan dari form Contact beserta push notification
-- Dashboard analitik (kunjungan, like, share) dan meter penyimpanan
+- Dashboard ringkasan (jumlah suka, proyek, pesan belum dibaca) dan meter penyimpanan
 - Upload media ke Vercel Blob
 
 ## Teknologi
@@ -31,17 +34,21 @@ Website portofolio pribadi lengkap dengan CMS. Satu aplikasi React melayani hala
 ```
 .
 ├── apps/
-│   ├── web/          # SPA React: halaman publik + panel admin
-│   └── api/          # REST API Hono
+│   ├── web/          # SPA React: halaman publik + panel admin (+ Dockerfile, nginx.conf)
+│   └── api/          # REST API Hono (+ Dockerfile)
 │       └── migrations/   # File SQL, dijalankan otomatis saat API start
-└── packages/
-    └── shared/       # Tipe TypeScript bersama (web & api)
+├── packages/
+│   └── shared/       # Tipe TypeScript bersama (web & api)
+├── deploy/           # Manifest Kubernetes (Kustomize) untuk k3s
+└── infra/            # Catatan infrastruktur (secret, k3s, gateway)
 ```
+
+Folder `assets-src/` (di-gitignore) dipakai secara lokal untuk menyimpan gambar sumber beresolusi tinggi. File yang dipakai aplikasi adalah versi WebP di `apps/web/src/assets/illustrations/`.
 
 ## Menjalankan secara lokal
 
 ### Prasyarat
-- Node.js 20+
+- Node.js 24
 - pnpm 9 (`corepack enable`)
 - PostgreSQL
 - GitHub OAuth App (callback: `<BETTER_AUTH_URL>/api/auth/callback/github`)
@@ -90,6 +97,7 @@ Migrasi database dijalankan otomatis setiap API start. Setelah itu buka web di a
 | Perintah | Fungsi |
 | --- | --- |
 | `pnpm dev` | Jalankan web dan api bersamaan |
+| `pnpm dev:secrets` | Sama seperti `pnpm dev`, dengan secret diambil dari Infisical (`infisical login` dulu) |
 | `pnpm dev:web` / `pnpm dev:api` | Jalankan salah satu saja |
 | `pnpm build` | Build semua app |
 | `pnpm typecheck` | Cek tipe TypeScript di semua app |
@@ -100,16 +108,18 @@ Migrasi database dijalankan otomatis setiap API start. Setelah itu buka web di a
 
 | Aset | Kreator | Sumber |
 | --- | --- | --- |
-| Jerapah dengan laptop (`giraffe-laptop.svg`) | [Charcoal 3D](https://iconscout.com/contributors/triple-t) | [IconScout](https://iconscout.com/free-3d-icon/free-cute-giraffe-working-on-laptop-3d-icon_10199650) |
-| Jerapah dengan headset VR (`giraffe-vr-headset.svg`) | [Charcoal 3D](https://iconscout.com/contributors/triple-t) | [IconScout](https://iconscout.com/free-3d-icon/free-cute-giraffe-wearing-virtual-reality-headset-3d-icon_10199646) |
+| Jerapah dengan laptop (`giraffe-laptop.webp`) | [Charcoal 3D](https://iconscout.com/contributors/triple-t) | [IconScout](https://iconscout.com/free-3d-icon/free-cute-giraffe-working-on-laptop-3d-icon_10199650) |
+| Jerapah dengan headset VR (`giraffe-vr-headset.webp`) | [Charcoal 3D](https://iconscout.com/contributors/triple-t) | [IconScout](https://iconscout.com/free-3d-icon/free-cute-giraffe-wearing-virtual-reality-headset-3d-icon_10199646) |
 | No notification (`no-notification.svg`) | [Dominika Faściszewska](https://iconscout.com/contributors/dominika-fasciszewska) | [IconScout](https://iconscout.com/free-illustration/free-no-notification-illustration_12308345) |
 | Empty box (`empty-box.svg`) | [Dominika Faściszewska](https://iconscout.com/contributors/dominika-fasciszewska) | [IconScout](https://iconscout.com/free-illustration/free-empty-box-illustration_12308349) |
 | Empty email (`empty-email.svg`) | [Dominika Faściszewska](https://iconscout.com/contributors/dominika-fasciszewska) | [IconScout](https://iconscout.com/free-illustration/free-empty-email-illustration_12308350) |
 | 404 kipas meja (`not-found-404.svg`) | [Abdul Latif](https://lottiefiles.com/animoox) | [LottieFiles](https://lottiefiles.com/free-animation/table-fan-404-error-sjGhWl2wEy) |
-| Medali (`medal.svg`) | Vijay Verma | [3dicons](https://3dicons.co) |
+| Medali (`medal.webp`) | Vijay Verma | [3dicons](https://3dicons.co) |
 
 Aset di atas tetap milik kreatornya masing-masing, digunakan sesuai lisensinya, dan **tidak** termasuk dalam lisensi kode repo ini. Jangan mengambil atau mendistribusikan ulang aset tersebut dari repo ini; unduh langsung dari sumbernya.
 
+Gambar asli beresolusi tinggi tidak disimpan di repo; yang ada hanya versi WebP yang sudah diperkecil untuk ditampilkan di website.
+
 ### Komponen & animasi
 
-- [React Bits](https://reactbits.dev): ClickSpark dan Counter (tombol like & share).
+- [React Bits](https://reactbits.dev): Dock (navigasi publik), ClickSpark dan Counter (tombol like & share), serta Stroke Text (teks "Mohon Tunggu"/"Selamat Datang!" di admin).

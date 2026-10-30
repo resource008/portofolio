@@ -2,7 +2,6 @@ import { useLayoutEffect, type RefObject } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useIntroDone } from "@/lib/intro";
-import { getMotionEnabled } from "@/lib/motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -14,7 +13,7 @@ export function useRevealOnScroll(
 
   useLayoutEffect(() => {
     const root = scope.current;
-    if (!root || !introDone || !getMotionEnabled()) return;
+    if (!root || !introDone) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const ctx = gsap.context(() => {

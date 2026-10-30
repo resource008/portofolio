@@ -2,7 +2,6 @@ import { useLayoutEffect, type RefObject } from "react";
 import gsap from "gsap";
 import { SplitText } from "gsap/SplitText";
 import { ENTRANCE } from "@/lib/intro";
-import { getMotionEnabled } from "@/lib/motion";
 
 gsap.registerPlugin(SplitText);
 
@@ -17,7 +16,7 @@ export function useHeroEntrance(
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
-    if (reduced || !getMotionEnabled()) {
+    if (reduced) {
       root.dataset.heroDone = "";
       return;
     }

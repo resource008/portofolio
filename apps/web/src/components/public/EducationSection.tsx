@@ -10,7 +10,7 @@ import { useRef } from "react";
 import { ScrollTimeline } from "@/components/public/ScrollTimeline";
 import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
-import medal from "@/assets/illustrations/medal.svg";
+import medal from "@/assets/illustrations/medal.webp";
 
 function EducationMainBlock({ item }: { item: Education }) {
   const logo = item.logo_url ?? campusLogo(item.institution_name);

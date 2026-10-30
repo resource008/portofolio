@@ -30,9 +30,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CvDialogContent } from "@/components/public/CvDialog";
+import { LazyCvDialog as CvDialogContent } from "@/components/public/LazyOverlays";
 import ProfileCard from "@/components/public/ProfileCard";
-import { ProjectDrawer } from "@/components/public/ProjectDrawer";
+import { LazyProjectDrawer as ProjectDrawer } from "@/components/public/LazyOverlays";
 import { useHeroEntrance } from "@/components/public/use-hero-entrance";
 import { useIntroDone } from "@/lib/intro";
 
@@ -562,16 +562,16 @@ export function HeroSection() {
 
   return (
     <section
-      className="relative flex min-h-svh flex-col overflow-hidden bg-[#FFF4F4] pt-28 pb-16 dark:bg-neutral-950"
+      className="relative flex min-h-svh flex-col overflow-hidden bg-[#FFF4F4] pt-[clamp(5.5rem,14svh,7rem)] pb-[clamp(3.5rem,9svh,4rem)] dark:bg-neutral-950"
       id="home"
       ref={sectionRef}
     >
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 sm:px-6">
         <div className="flex flex-1 items-center py-6">
-          <div className="grid w-full items-center gap-8 lg:grid-cols-2 lg:gap-10">
-            <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
+          <div className="grid w-full items-center gap-8 md:grid-cols-2 md:gap-8 lg:gap-10">
+            <div className="flex flex-col items-center text-center md:items-start md:text-left">
               {roles.length > 0 && (
-                <div className="relative z-10 flex flex-wrap items-center justify-center gap-2.5 lg:justify-start">
+                <div className="relative z-10 flex flex-wrap items-center justify-center gap-2.5 md:justify-start">
                   {roles.map((skill) => (
                     <span
                       data-hero="role"
@@ -585,11 +585,11 @@ export function HeroSection() {
               )}
 
               {(heading || name) && (
-                <h1 className="mt-5 text-center font-bold text-3xl text-neutral-900 leading-[1.05] tracking-tight sm:text-4xl md:text-5xl lg:text-left lg:text-6xl dark:text-neutral-50">
+                <h1 className="mt-5 text-center font-bold text-[clamp(1.875rem,min(1rem+3.4vw,7.5svh),3.75rem)] text-neutral-900 leading-[1.05] tracking-tight md:text-left dark:text-neutral-50">
                   {heading && (
                     <span
                       data-hero="heading"
-                      className="block font-medium text-lg text-neutral-500 tracking-normal sm:text-xl dark:text-neutral-400"
+                      className="block font-medium text-[clamp(1.0625rem,0.9rem+0.5vw,1.25rem)] text-neutral-500 tracking-normal dark:text-neutral-400"
                     >
                       {heading}
                     </span>
@@ -605,7 +605,7 @@ export function HeroSection() {
               {description && (
                 <p
                   data-hero="description"
-                  className="mt-5 mx-auto max-w-xl text-center text-base text-neutral-600 sm:text-lg lg:mx-0 lg:text-left dark:text-neutral-400"
+                  className="mt-5 mx-auto max-w-xl text-center text-[clamp(1rem,0.85rem+0.5vw,1.125rem)] text-neutral-600 md:mx-0 md:text-left dark:text-neutral-400"
                 >
                   {description}
                 </p>
@@ -631,7 +631,7 @@ export function HeroSection() {
             </div>
 
             <div
-              className="relative mx-auto hidden w-full max-w-md md:block"
+              className="relative mx-auto hidden w-full max-w-[min(22.5rem,calc((100svh-13rem)*0.8))] md:block"
               data-hero="card"
             >
               <div>

@@ -161,6 +161,7 @@ export default function EducationSection({
   const [tab, setTab] = useState<"instansi" | "sertifikasi">("instansi");
   const [view, setView] = useState<"list" | "form">("list");
   const isMobile = useIsMobile();
+  const canSwipe = useMediaQuery("max-lg");
   const isLargeScreen = useMediaQuery("lg");
   const requestLeave = useRequestLeave();
 
@@ -380,7 +381,7 @@ export default function EducationSection({
                       </SwipeActionButton>
                     </>
                   }
-                  enabled={isMobile}
+                  enabled={canSwipe}
                 >
                 <Accordion
                   onValueChange={() => toggleExpanded(item.id)}
@@ -444,7 +445,7 @@ export default function EducationSection({
                   </AccordionTrigger>
                   </div>
 
-                  {!isMobile && (
+                  {!canSwipe && (
                     <>
                       <Button
                         aria-label={t("Ubah")}
@@ -631,7 +632,7 @@ export default function EducationSection({
                       <SertifikasiEditor
                         editing={editing}
                         headerClassName="sticky top-0 z-20 -mx-6 flex items-center justify-between border-b bg-popover px-6 py-3"
-                        isMobile={isMobile}
+                        isMobile={canSwipe}
                         setEditing={setEditing}
                       />
                     </div>

@@ -249,6 +249,7 @@ export default function ProjectsSection({
   const autoSaveTimer = useRef<number | null>(null);
   const isNewSessionRef = useRef(false);
   const isMobile = useMediaQuery("max-md");
+  const canSwipe = useMediaQuery("max-lg");
   const requestLeave = useRequestLeave();
 
   // Portal ke scroll container (SidebarInset) supaya sticky bottom berfungsi.
@@ -256,6 +257,17 @@ export default function ProjectsSection({
   useEffect(() => {
     setActionBarHost(document.querySelector<HTMLElement>("[data-transition-frame]"));
   }, []);
+
+  // Di layar kecil editor proyek dibuka layar penuh (lihat aturan data-project-editor di index.css).
+  const editorOpen = editing !== null;
+  useEffect(() => {
+    if (!editorOpen || !isMobile) return;
+    const root = document.documentElement;
+    root.dataset.projectEditor = "full";
+    return () => {
+      delete root.dataset.projectEditor;
+    };
+  }, [editorOpen, isMobile]);
 
   async function openEditor(item: Project | null) {
     isNewSessionRef.current = !item;
@@ -422,6 +434,13 @@ export default function ProjectsSection({
 
   function saveAndClose(published: boolean) {
     if (!editing) return;
+    if (published && editing.media.length === 0) {
+      toastManager.add({
+        title: t("Unggah gambar cover dulu sebelum mempublikasikan"),
+        type: "error",
+      });
+      return;
+    }
     if (!formValid(editing)) {
       toastManager.add({
         title: t("Judul proyek (blok Judul) dan kategori wajib diisi"),
@@ -722,7 +741,7 @@ export default function ProjectsSection({
       {editing ? (
         <div className="min-h-[calc(100svh-5rem)] space-y-4 lg:min-h-[calc(100svh-5.5rem)]">
           {isMobile && (
-            <div className="sticky top-14 z-30 -mx-4 flex items-center gap-2.5 border-b bg-background/95 px-4 py-2.5 backdrop-blur">
+            <div className="sticky top-0 z-30 -mx-4 flex items-center gap-2.5 border-b bg-background/95 px-4 py-2.5 backdrop-blur">
               <Button
                 aria-label={t("Batal")}
                 onClick={() => requestLeave(() => setEditing(null))}
@@ -755,7 +774,18 @@ export default function ProjectsSection({
                 <div className="space-y-5">
                   <CoverMediaField
                     media={editing.media}
-                    onChange={(media) => setEditing({ ...editing, media })}
+                    onChange={(media) => {
+                      const hasTitle = editing.content.some(
+                        (block) => block.type === "heading" && block.isTitle,
+                      );
+                      // Cover pertama kali diunggah: siapkan blok Judul di paling atas.
+                      const content =
+                        media.length > 0 && editing.media.length === 0 && !hasTitle
+                          ? [{ type: "heading", text: "", isTitle: true } as ProjectBlock, ...editing.content]
+                          : editing.content;
+                      setEditing({ ...editing, media, content });
+                      if (media.length === 0) setSelection(null);
+                    }}
                   >
                     <ProjectMetaBar
                       categories={categories}
@@ -767,13 +797,16 @@ export default function ProjectsSection({
                     />
                   </CoverMediaField>
 
-                  <ContentEditor
-                    blocks={editing.content}
-                    isMobile={isMobile}
-                    onChange={(content) => setEditing({ ...editing, content })}
-                    onSelect={selectBlock}
-                    selectedIndex={selection}
-                  />
+                  {/* Tanpa cover, blok disembunyikan (tidak dihapus) dan muncul lagi saat cover diunggah. */}
+                  {editing.media.length > 0 && (
+                    <ContentEditor
+                      blocks={editing.content}
+                      isMobile={isMobile}
+                      onChange={(content) => setEditing({ ...editing, content })}
+                      onSelect={selectBlock}
+                      selectedIndex={selection}
+                    />
+                  )}
                 </div>
               </div>
 
@@ -811,7 +844,7 @@ export default function ProjectsSection({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (
             <ProjectCardItem
-              isMobile={isMobile}
+              isMobile={canSwipe}
               item={item}
               key={item.id}
               loadingDetail={loadingDetail}
@@ -833,7 +866,7 @@ export default function ProjectsSection({
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {items.map((item) => (
             <ProjectListItem
-              isMobile={isMobile}
+              isMobile={canSwipe}
               item={item}
               key={item.id}
               loadingDetail={loadingDetail}
@@ -853,7 +886,7 @@ export default function ProjectsSection({
         </div>
       )}
 
-      {!editing && (
+      {!editing && !selectMode && (
         <Button
           aria-label={t("Tambah proyek")}
           className="fixed right-6 bottom-6 z-40 size-16 sm:size-16 rounded-full shadow-lg before:rounded-full"
@@ -903,9 +936,8 @@ export default function ProjectsSection({
         actionBarHost &&
         createPortal(
           <div className="sticky bottom-0 z-30 shrink-0 border-t bg-background/95 px-4 py-3 backdrop-blur lg:px-6">
-            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
-              <div aria-hidden="true" />
-              <div className="flex min-w-0 items-center justify-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center justify-start gap-2">
                 {!isNewSessionRef.current &&
                   (editing.is_published ? (
                     <Badge variant="success">{t("Terbit")}</Badge>
@@ -942,7 +974,7 @@ export default function ProjectsSection({
                   />
                   <MenuPopup align="end" side="top" sideOffset={8} className="w-60">
                     <MenuGroup>
-                      <MenuItem onClick={() => saveAndClose(true)}>
+                      <MenuItem disabled={editing.media.length === 0} onClick={() => saveAndClose(true)}>
                         {editing.is_published ? <ArrowDownTrayIcon /> : <ArrowUpTrayIcon />}
                         {editing.is_published ? t("Simpan") : t("Simpan dan Publikasikan")}
                       </MenuItem>
@@ -1334,6 +1366,7 @@ function ProjectItemCover({
   onEdit,
   onDelete,
   className,
+  hideMenu = false,
 }: {
   item: Project;
   selectMode: boolean;
@@ -1343,6 +1376,8 @@ function ProjectItemCover({
   onEdit: () => void;
   onDelete: () => void;
   className?: string;
+  /** Disembunyikan saat Ubah/Hapus tersedia lewat slide (layar kecil-sedang). */
+  hideMenu?: boolean;
 }) {
   const { t } = useLanguage();
   return (
@@ -1387,7 +1422,7 @@ function ProjectItemCover({
         </div>
       )}
 
-      {!selectMode && (
+      {!selectMode && !hideMenu && (
         <div className="absolute end-2 bottom-2 z-10">
           <ProjectItemMenu loadingDetail={loadingDetail} onDelete={onDelete} onEdit={onEdit} />
         </div>
@@ -1441,6 +1476,7 @@ function ProjectCardItem({
       >
         <div className="flex flex-col">
           <ProjectItemCover
+            hideMenu={isMobile}
             item={item}
             loadingDetail={loadingDetail}
             onDelete={onDelete}
@@ -1503,6 +1539,7 @@ function ProjectListItem({
       >
         <div className="flex h-full flex-row">
           <ProjectItemCover
+            hideMenu={isMobile}
             className="h-full w-40 sm:w-48"
             item={item}
             loadingDetail={loadingDetail}
@@ -1970,7 +2007,7 @@ function ContentEditor({
               items={blocks.map((_, i) => i)}
               strategy={verticalListSortingStrategy}
             >
-              <ul className="space-y-3">
+              <ul className="space-y-7 lg:space-y-3">
                 {blocks.map((block, index) => (
                   <li key={index}>
                     <SortableCanvasBlock
@@ -2032,8 +2069,7 @@ function SortableCanvasBlock({
 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { t } = useLanguage();
-  const showSettings =
-    block.type === "image" || block.type === "video" || block.type === "heading";
+  const showSettings = block.type === "image" || block.type === "video";
 
   return (
     <div
@@ -2047,7 +2083,7 @@ function SortableCanvasBlock({
       ref={setNodeRef}
       style={style}
     >
-      <div className="absolute -start-6 top-1/2 z-20 flex -translate-y-1/2 flex-col items-center gap-0.5 rounded-lg bg-background p-0.5 opacity-100 shadow-xs transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
+      <div className="absolute -top-4 start-2 z-20 flex flex-row items-center gap-0.5 rounded-lg border bg-background p-0.5 opacity-100 shadow-xs transition-opacity lg:-start-6 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:border-0 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
         <Button
           aria-label={t("Geser blok")}
           className="cursor-grab text-muted-foreground"
@@ -2059,16 +2095,6 @@ function SortableCanvasBlock({
         >
           <EllipsisVerticalIcon className="size-4" />
         </Button>
-        {block.type === "heading" && isMobile && (
-          <button
-            aria-label={t("Pengaturan judul")}
-            className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6"
-            onClick={() => setSettingsOpen(true)}
-            type="button"
-          >
-            <Cog6ToothIcon className="size-4" />
-          </button>
-        )}
         <button
           aria-label={t("Hapus blok")}
           className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-destructive outline-none transition-colors hover:text-destructive/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6"
@@ -2092,25 +2118,11 @@ function SortableCanvasBlock({
           <DrawerPopup showBar>
             <DrawerHeader className="px-6 pt-4 pb-1">
               <DrawerTitle className="text-base">
-                {block.type === "video"
-                  ? t("Pengaturan Video")
-                  : block.type === "image"
-                    ? t("Pengaturan Gambar")
-                    : t("Pengaturan Judul")}
+                {block.type === "video" ? t("Pengaturan Video") : t("Pengaturan Gambar")}
               </DrawerTitle>
             </DrawerHeader>
             <DrawerPanel className="px-6 pt-1 pb-4" data-base-ui-swipe-ignore>
-              {block.type === "heading" ? (
-                <label className="flex cursor-pointer items-center gap-2 text-sm">
-                  <Checkbox
-                    checked={block.isTitle ?? false}
-                    onCheckedChange={(checked) => onChange({ isTitle: checked })}
-                  />
-                  {t("Jadikan judul proyek")}
-                </label>
-              ) : (
-                <MediaBlockProperties block={block} onChange={onChange} />
-              )}
+              <MediaBlockProperties block={block} onChange={onChange} />
             </DrawerPanel>
           </DrawerPopup>
         </Drawer>

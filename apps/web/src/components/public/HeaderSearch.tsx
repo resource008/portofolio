@@ -8,7 +8,7 @@ import { matchesProject } from "@/lib/project-search";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogBackdrop, DialogPortal } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { ProjectDrawer } from "@/components/public/ProjectDrawer";
+import { LazyProjectDrawer as ProjectDrawer } from "@/components/public/LazyOverlays";
 
 function ResultThumb({ project }: { project: Project }) {
   const image = project.media.find((item) => item.type === "image");

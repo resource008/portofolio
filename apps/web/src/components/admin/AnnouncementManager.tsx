@@ -97,7 +97,7 @@ export default function AnnouncementManager({ className }: { className?: string 
   const [pendingDelete, setPendingDelete] = useState<ProjectAnnouncement | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
-  const isMobile = useMediaQuery("max-md");
+  const isMobile = useMediaQuery("max-lg");
   const isLargeScreen = useMediaQuery("lg");
 
   useEffect(() => {

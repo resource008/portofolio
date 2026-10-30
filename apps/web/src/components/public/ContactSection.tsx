@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toastManager } from "@/components/ui/toast";
 import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
-import giraffeVR from "@/assets/illustrations/giraffe-vr-headset.svg";
+import giraffeVR from "@/assets/illustrations/giraffe-vr-headset.webp";
 
 interface FormState {
   name: string;

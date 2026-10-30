@@ -1,7 +1,6 @@
 import { useLayoutEffect, useRef, type ReactNode } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { useMotionEnabled } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -26,7 +25,9 @@ export function ScrollTimeline<T>({
   className?: string;
 }) {
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const { motionEnabled } = useMotionEnabled();
+  // Web publik tidak mengikuti toggle animasi admin; hanya "kurangi gerakan" milik perangkat.
+  const motionEnabled =
+    typeof window === "undefined" || !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   useLayoutEffect(() => {
     const root = rootRef.current;
@@ -98,11 +99,19 @@ export function ScrollTimeline<T>({
       });
     }, root);
 
-    // Tinggi kartu bisa berubah (gambar dimuat, dropdown dibuka) — hitung ulang.
-    const observer = new ResizeObserver(() => ScrollTrigger.refresh());
+    // Hitung ulang posisi saat tinggi timeline ATAU halaman berubah (Hero selesai dimuat,
+    // gambar di atasnya termuat, dsb.), supaya bar progres terisi di posisi yang tepat.
+    let frame = 0;
+    const refresh = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => ScrollTrigger.refresh());
+    };
+    const observer = new ResizeObserver(refresh);
     observer.observe(root);
+    observer.observe(document.body);
 
     return () => {
+      cancelAnimationFrame(frame);
       observer.disconnect();
       ctx.revert();
     };
