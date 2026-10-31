@@ -2059,8 +2059,10 @@ function SortableCanvasBlock({
   onSelect?: () => void;
   isMobile?: boolean;
 }) {
+  const isTitle = block.type === "heading" && !!block.isTitle;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
+    disabled: isTitle,
   });
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
@@ -2083,6 +2085,7 @@ function SortableCanvasBlock({
       ref={setNodeRef}
       style={style}
     >
+      {!isTitle && (
       <div className="absolute -top-4 start-2 z-20 flex flex-row items-center gap-0.5 rounded-lg border bg-background p-0.5 opacity-100 shadow-xs transition-opacity lg:-start-6 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:border-0 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
         <Button
           aria-label={t("Geser blok")}
@@ -2104,6 +2107,7 @@ function SortableCanvasBlock({
           <TrashIcon className="size-4" />
         </button>
       </div>
+      )}
 
       <CanvasBlockContent
         autoFocus={autoFocus}
@@ -2267,10 +2271,10 @@ function CanvasTextBlock({
   onAutoFocusDone?: () => void;
 }) {
   return (
-    <div className="min-w-0 rounded-lg border border-transparent px-2 py-1 transition-colors hover:border-border">
+    <div className="min-w-0 px-2 py-1">
       <RichTextBlock
         autoFocus={autoFocus}
-        className="min-h-28 w-full text-base leading-relaxed text-foreground [&:empty]:before:text-muted-foreground [&:empty]:before:content-['Teks']"
+        className="w-full text-base leading-relaxed text-foreground [&:empty]:before:text-muted-foreground [&:empty]:before:content-['Teks']"
         onChange={(html) => onChange({ text: html })}
         onAutoFocusDone={onAutoFocusDone}
         showTools
