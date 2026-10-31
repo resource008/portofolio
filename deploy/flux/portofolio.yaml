@@ -1,0 +1,34 @@
+# GitOps wiring: Flux pulls main from the public repo and keeps deploy/base applied.
+# Applied once by hand (no `flux bootstrap`, so no write token and no direct pushes to main).
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: portofolio
+  namespace: flux-system
+spec:
+  interval: 1m
+  url: https://github.com/resource008/portofolio
+  ref:
+    branch: main
+  # Only the manifests matter; skip app sources so unrelated commits are cheap to fetch.
+  ignore: |
+    /*
+    !/deploy/
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: portofolio
+  namespace: flux-system
+spec:
+  interval: 10m
+  retryInterval: 1m
+  timeout: 3m
+  sourceRef:
+    kind: GitRepository
+    name: portofolio
+  path: ./deploy/base
+  # Delete cluster objects that were removed from Git.
+  prune: true
+  # Report Ready only after the Deployments and StatefulSet are healthy.
+  wait: true
