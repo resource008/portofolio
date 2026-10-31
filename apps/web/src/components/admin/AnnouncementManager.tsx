@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownTrayIcon, BoltIcon, ClipboardDocumentListIcon, EllipsisVerticalIcon, ExclamationCircleIcon, PencilIcon, PhotoIcon, PlusIcon, SparklesIcon, TrashIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, BoltIcon, ClipboardDocumentListIcon, EllipsisVerticalIcon, ExclamationCircleIcon, PencilIcon, PhotoIcon, PlusIcon, SparklesIcon, TrashIcon } from "@heroicons/react/24/outline";
 import type {
   AnnouncementKind,
   AnnouncementType,
@@ -228,9 +228,6 @@ export default function AnnouncementManager({ className }: { className?: string 
   ) : null;
   const formActions = (
     <>
-      <Button onClick={() => setEditing(null)} type="button" variant="ghost">
-        <XMarkIcon /> {t("Batal")}
-      </Button>
       <Button
         loading={saveMutation.isPending}
         onClick={() => editing && saveMutation.mutate(editing)}
