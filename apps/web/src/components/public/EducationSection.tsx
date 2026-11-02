@@ -3,10 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { AcademicCapIcon, ArrowUpRightIcon, CalendarIcon, DocumentTextIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import type { Certificate, Education, EducationContent } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
-import { campusLogo } from "@/lib/campus-logo";
+import { campusLogo, logoFromDomain } from "@/lib/campus-logo";
+import { resolveCertLogo } from "@/lib/cert-logo";
 import { safeHref } from "@/lib/sanitize";
 import { cn, isDocumentFile } from "@/lib/utils";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { ScrollTimeline } from "@/components/public/ScrollTimeline";
 import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
@@ -73,10 +74,39 @@ function CertificatePreview({ src, title }: { src: string; title: string }) {
   );
 }
 
+// Logo penerbit: dari nama organisasi, atau domain tautan kredensial (sama seperti di admin).
+function certificateLogo(organization: string | null | undefined, link: string | undefined) {
+  const byName = resolveCertLogo(organization);
+  if (byName) return byName;
+  if (!link) return null;
+  try {
+    const host = new URL(link.startsWith("http") ? link : `https://${link}`).hostname.replace(/^www\./, "");
+    return logoFromDomain(host);
+  } catch {
+    return null;
+  }
+}
+
+function CertLogo({ src, className }: { src: string; className: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <TrophyIcon className="size-8 text-muted-foreground" />;
+  return (
+    <img
+      alt=""
+      className={className}
+      decoding="async"
+      loading="lazy"
+      onError={() => setFailed(true)}
+      src={src}
+    />
+  );
+}
+
 function AchievementRow({ achievement }: { achievement: Certificate }) {
   const documents = achievement.documents ?? [];
   const file = documents.find(isDocumentFile);
   const link = documents.find((doc) => doc.trim() && !isDocumentFile(doc));
+  const logo = certificateLogo(achievement.organization, link);
 
   return (
     <li className="flex items-stretch overflow-hidden rounded-lg border border-border/60 bg-muted/50">
@@ -91,8 +121,12 @@ function AchievementRow({ achievement }: { achievement: Certificate }) {
           <CertificatePreview src={file} title={achievement.title} />
         </a>
       ) : (
-        <div className="grid aspect-[4/3] w-28 shrink-0 place-items-center bg-muted text-muted-foreground sm:w-36">
-          <TrophyIcon className="size-8" />
+        <div className="grid aspect-[4/3] w-28 shrink-0 place-items-center bg-white text-muted-foreground sm:w-36 dark:bg-muted">
+          {logo ? (
+            <CertLogo className="size-12 object-contain sm:size-14" src={logo} />
+          ) : (
+            <TrophyIcon className="size-8" />
+          )}
         </div>
       )}
       <div className="flex min-w-0 flex-1 items-center gap-2 p-3 sm:p-4">
@@ -105,7 +139,15 @@ function AchievementRow({ achievement }: { achievement: Certificate }) {
           ) : null}
           <p className="font-medium text-foreground text-sm">{achievement.title}</p>
           {achievement.organization ? (
-            <p className="mt-0.5 text-muted-foreground text-xs">{achievement.organization}</p>
+            <p className="mt-0.5 flex items-center gap-1.5 text-muted-foreground text-xs">
+              {/* Saat kotak kiri berisi pratinjau sertifikat, logo penerbit tampil di samping namanya. */}
+              {file && logo ? (
+                <span className="grid size-4 shrink-0 place-items-center rounded-sm bg-white">
+                  <CertLogo className="size-3.5 object-contain" src={logo} />
+                </span>
+              ) : null}
+              {achievement.organization}
+            </p>
           ) : null}
         </div>
         {link ? (
