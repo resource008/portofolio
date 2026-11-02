@@ -13,7 +13,9 @@ resources:
 labels:
   - pairs:
       app.kubernetes.io/part-of: portofolio
-# Images are promoted by CI and tagged with the main commit SHA.
+# Images are promoted by CI and tagged with the main commit SHA. CI rewrites newTag to
+# the merge commit when it publishes deploy/base for Flux, so the value here only matters
+# for a manual `kubectl apply -k`.
 images:
   - name: ghcr.io/resource008/portofolio-api
     newTag: f3ba75a194b4b9c44755f83b5531720109d7d301

@@ -174,3 +174,20 @@ jobs:
               "$REGISTRY/portofolio-$app:$DEV_SHA"
             echo "- \`$REGISTRY/portofolio-$app:$GITHUB_SHA\` (from \`$DEV_SHA\`)" >> "$GITHUB_STEP_SUMMARY"
           done
+
+      - uses: fluxcd/flux2/action@3fa784edd773d56630bb9f62645e08f70c2cff0a # v2.10.0
+        with:
+          version: 2.10.0
+
+      # Flux in the cluster follows the "main" tag of this artifact, so a merge deploys
+      # without a second commit to bump newTag. The bump only happens in this workspace.
+      - name: Publish deploy manifests
+        run: |
+          yq -i '(.images[].newTag) = strenv(GITHUB_SHA)' deploy/base/kustomization.yaml
+          artifact="oci://$REGISTRY/portofolio-deploy"
+          flux push artifact "$artifact:$GITHUB_SHA" \
+            --path=deploy/base \
+            --source="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
+            --revision="$GITHUB_REF_NAME@sha1:$GITHUB_SHA"
+          flux tag artifact "$artifact:$GITHUB_SHA" --tag main
+          echo "- \`$artifact:$GITHUB_SHA\` (tagged \`main\`)" >> "$GITHUB_STEP_SUMMARY"
