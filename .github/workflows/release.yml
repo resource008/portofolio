@@ -64,15 +64,16 @@ jobs:
         with:
           version: 2.10.0
 
-      # Flux in the cluster follows the "main" tag of this artifact, so a merge deploys
-      # without a second commit to bump newTag. The bump only happens in this workspace.
+      # Flux in the cluster follows the deploy-main tag, so a merge deploys without a second
+      # commit to bump newTag (the bump only happens in this workspace). The manifests live as
+      # deploy-* tags in the web package to keep GHCR at two packages.
       - name: Publish deploy manifests
         run: |
           yq -i '(.images[].newTag) = strenv(GITHUB_SHA)' deploy/base/kustomization.yaml
-          artifact="oci://$REGISTRY/portofolio-deploy"
-          flux push artifact "$artifact:$GITHUB_SHA" \
+          artifact="oci://$REGISTRY/portofolio-web"
+          flux push artifact "$artifact:deploy-$GITHUB_SHA" \
             --path=deploy/base \
             --source="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" \
             --revision="$GITHUB_REF_NAME@sha1:$GITHUB_SHA"
-          flux tag artifact "$artifact:$GITHUB_SHA" --tag main
-          echo "- \`$artifact:$GITHUB_SHA\` (tagged \`main\`)" >> "$GITHUB_STEP_SUMMARY"
+          flux tag artifact "$artifact:deploy-$GITHUB_SHA" --tag deploy-main
+          echo "- \`$artifact:deploy-$GITHUB_SHA\` (tagged \`deploy-main\`)" >> "$GITHUB_STEP_SUMMARY"
