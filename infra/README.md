@@ -122,3 +122,32 @@ Browser ──HTTPS──▶ Cloudflare (proxy, sertifikat publik) ──HTTPS :
 3. HTTPS ke origin memakai **Cloudflare Origin Certificate** (ECC, 15 tahun, apex + wildcard), bukan cert-manager, untuk hemat RAM. Sertifikat dan key disimpan di Infisical `portofolio-app/prod/tls` (`TLS_CRT`, `TLS_KEY`) dan disinkronkan operator menjadi Secret `kubernetes.io/tls` `portofolio-tls`.
 4. `deploy/base/gateway.yaml`: listener `http` (8000) dan `https` (8443) Traefik, terpetakan ke 80/443 di node. `deploy/base/routes.yaml`: `/api` → `api:3001`, sisanya → `web:8080`, plus redirect HTTP → HTTPS.
 5. Cloudflare: SSL/TLS **Full (strict)**, **Always Use HTTPS** aktif. Firewall panel provider hanya membuka TCP 443 (port 80 tetap tertutup; redirect dilakukan Cloudflare). Pembatasan 443 hanya untuk IP Cloudflare menyusul di Tahap 7–8.
+
+## Tahap 5: GitOps dengan Flux
+
+Flux dipilih menggantikan ArgoCD karena RAM VPS terbatas: hanya `source-controller` dan `kustomize-controller` yang dipasang (±37 MB, ArgoCD versi hemat butuh ±250–300 MB).
+
+1. Laptop: `winget install -e --id FluxCD.Flux`, lalu `flux check --pre`.
+2. `flux install --components=source-controller,kustomize-controller`. Tanpa `flux bootstrap`, karena bootstrap butuh token tulis dan push langsung ke `main` yang dilindungi.
+3. `kubectl apply -f deploy/flux/portofolio.yaml` sekali secara manual. File ini mendefinisikan sumber resep dan `Kustomization` `portofolio` (`prune`, `wait`, patroli self-heal setiap 10 menit).
+4. Terbukti: perubahan yang di-apply manual dari laptop dikembalikan Flux sesuai sumbernya.
+
+Pemantauan: Headlamp desktop di laptop (`winget install -e --id Headlamp.Headlamp`, plugin Flux), memakai kubeconfig + SSH tunnel yang sama. Windows perlu `setx KUBECONFIG "%USERPROFILE%\.kube\portofolio.yaml"` karena Headlamp tidak membaca `~/.bashrc`.
+
+## Tahap 6: Rilis otomatis (OCI artifact)
+
+```
+push dev ──containers.yml──▶ build + smoke test ──▶ ghcr.io/resource008/portofolio-{api,web}:<sha-dev>
+merge main ──release.yml──▶ promote (retag ke <sha-main>)
+                         └─▶ deploy/base dengan newTag=<sha-main> ──▶ portofolio-web:deploy-<sha-main> (tag deploy-main)
+Flux (OCIRepository, tiap 1 menit) ──▶ apply ──▶ pod baru
+```
+
+- `newTag` hanya diisi di workspace CI (`yq`), tidak di-commit, sehingga satu merge sudah cukup untuk deploy. Versi yang berjalan selalu = commit `main` terakhir.
+- Resep disimpan sebagai tag `deploy-*` di paket `portofolio-web` supaya GHCR tetap dua paket. Paket itu publik, jadi Flux tidak butuh kredensial.
+- Perpindahan sumber: apply `deploy/flux/portofolio.yaml` (`OCIRepository`), lalu `kubectl delete gitrepository portofolio -n flux-system`. Nama `Kustomization` tetap sama sehingga tidak ada resource yang ter-prune.
+- `newTag` di Git hanya relevan untuk `kubectl apply -k` manual.
+
+Rollback: `git revert` commit yang bermasalah lalu merge. CI menerbitkan resep baru dan Flux menerapkannya.
+
+Kubeconfig laptop bisa diambil ulang kapan saja (Git Bash, bukan PowerShell): `ssh portofolio-vps "sudo cat /etc/rancher/k3s/k3s.yaml" > ~/.kube/portofolio.yaml`. Di VPS, `kubectl` butuh `sudo` karena file itu hanya bisa dibaca root.
