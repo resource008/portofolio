@@ -183,7 +183,7 @@ export default function EducationSection({
   }
 
   const saveMutation = useMutation({
-    mutationFn: ({ form, publish }: { form: EducationForm; publish: boolean }) => {
+    mutationFn: ({ form, publish }: { form: EducationForm; publish: boolean; silent?: boolean }) => {
       const payload = {
         ...form,
         is_published: publish,
@@ -213,7 +213,9 @@ export default function EducationSection({
         type: "success",
       });
     },
-    onError: (error) => {
+    onError: (error, { silent }) => {
+      // Auto-save on leave: an unfinished new entry simply is not kept, no need to alarm.
+      if (silent) return;
       toastManager.add({
         title: t("Gagal menyimpan"),
         description: (error as Error).message,
@@ -254,7 +256,7 @@ export default function EducationSection({
   useUnsavedChangesGuard({
     isDirty,
     onSave: () =>
-      editing ? saveMutation.mutateAsync({ form: editing, publish: false }) : Promise.resolve(),
+      editing ? saveMutation.mutateAsync({ form: editing, publish: false, silent: true }) : Promise.resolve(),
     autoSaveOnLeave: true,
   });
 

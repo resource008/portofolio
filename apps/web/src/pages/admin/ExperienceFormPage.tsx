@@ -65,7 +65,7 @@ export default function ExperienceFormPage() {
     JSON.stringify(editing) !== JSON.stringify(baseline);
 
   const saveMutation = useMutation({
-    mutationFn: ({ form, publish }: { form: ExperienceForm; publish: boolean }) => {
+    mutationFn: ({ form, publish }: { form: ExperienceForm; publish: boolean; silent?: boolean }) => {
       const payload = {
         ...form,
         is_published: publish,
@@ -93,7 +93,9 @@ export default function ExperienceFormPage() {
         setEditing(next);
       }
     },
-    onError: (error) => {
+    onError: (error, { silent }) => {
+      // Auto-save on leave: an unfinished new entry simply is not kept, no need to alarm.
+      if (silent) return;
       toastManager.add({
         title: t("Gagal menyimpan"),
         description: (error as Error).message,
@@ -105,7 +107,7 @@ export default function ExperienceFormPage() {
   useUnsavedChangesGuard({
     isDirty,
     onSave: () =>
-      editing ? saveMutation.mutateAsync({ form: editing, publish: false }) : Promise.resolve(),
+      editing ? saveMutation.mutateAsync({ form: editing, publish: false, silent: true }) : Promise.resolve(),
     autoSaveOnLeave: true,
   });
 
