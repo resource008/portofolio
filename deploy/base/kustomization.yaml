@@ -10,6 +10,7 @@ resources:
   - web.yaml
   - gateway.yaml
   - routes.yaml
+  - headlamp.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: portofolio
