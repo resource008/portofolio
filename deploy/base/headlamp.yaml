@@ -1,0 +1,106 @@
+# Read-only cluster dashboard. Not exposed through the Gateway: the Service has a fixed
+# ClusterIP that `tailscale serve` on the node publishes to the owner's tailnet only.
+# Runs the server. It has no RBAC bindings; its token is only mounted because in-cluster
+# mode reads the API address and CA from it. Requests use the token you log in with.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp
+---
+# Login identity for the dashboard: the built-in "view" role (no Secrets, no writes).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: headlamp-viewer
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-viewer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-viewer
+    namespace: portofolio
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: headlamp-viewer-token
+  annotations:
+    kubernetes.io/service-account.name: headlamp-viewer
+type: kubernetes.io/service-account-token
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: headlamp
+spec:
+  # Fixed so the node-side `tailscale serve` target never changes.
+  clusterIP: 10.43.44.66
+  selector:
+    app.kubernetes.io/name: headlamp
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headlamp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: headlamp
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: headlamp
+    spec:
+      serviceAccountName: headlamp
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 100 # headlamp user in the image
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: headlamp
+          image: ghcr.io/headlamp-k8s/headlamp:v0.46.0
+          args: ["-in-cluster"]
+          ports:
+            - name: http
+              containerPort: 4466
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 128Mi
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
