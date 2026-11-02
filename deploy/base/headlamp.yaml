@@ -27,6 +27,33 @@ subjects:
     name: headlamp-viewer
     namespace: portofolio
 ---
+# "view" leaves out cluster-scoped nodes and metrics, which the overview's CPU and memory
+# charts need. Still read-only.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: headlamp-viewer-cluster
+rules:
+  - apiGroups: [""]
+    resources: ["nodes", "namespaces", "persistentvolumes"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes", "pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: headlamp-viewer-cluster
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: headlamp-viewer-cluster
+subjects:
+  - kind: ServiceAccount
+    name: headlamp-viewer
+    namespace: portofolio
+---
 apiVersion: v1
 kind: Secret
 metadata:
