@@ -331,7 +331,7 @@ function TechLogo({ name }: { name: string }) {
           <span
             className={cn(
               "me-3 grid size-12 shrink-0 place-items-center rounded-lg border",
-              "border-neutral-900/10 bg-white/80 dark:border-white/10 dark:bg-white/5",
+              "border-neutral-900/10 bg-white/80 dark:border-white/10 dark:bg-white",
             )}
           />
         }
@@ -346,7 +346,7 @@ function TechLogo({ name }: { name: string }) {
             src={logo ?? undefined}
           />
         ) : (
-          <CodeBracketIcon className="size-5 text-neutral-500 dark:text-neutral-300" />
+          <CodeBracketIcon className="size-5 text-neutral-500" />
         )}
       </TooltipTrigger>
       <TooltipPopup>{name}</TooltipPopup>
@@ -423,10 +423,10 @@ export function HeroTechBar() {
 
   return (
     <section className="border-y border-neutral-900/10 bg-white/60 py-10 lg:hidden dark:border-white/10 dark:bg-neutral-900">
-      <div className="mx-auto flex max-w-6xl flex-col items-start gap-6 px-4 sm:px-6">
-        <span className="ms-2 inline-flex -rotate-[15deg] items-center rounded-full border border-neutral-900/15 px-4 py-1.5 font-medium text-neutral-700 text-sm dark:border-white/20 dark:text-neutral-100">
+      <div className="mx-auto flex max-w-6xl flex-col items-center gap-5 px-4 sm:px-6">
+        <h2 className="font-semibold text-base text-neutral-800 tracking-tight dark:text-neutral-100">
           Tech Stack
-        </span>
+        </h2>
         <MobileTechBar names={names} />
       </div>
     </section>
