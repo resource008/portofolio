@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   DndContext,
@@ -15,10 +15,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowDownTrayIcon, ArrowLeftIcon, ArrowUpTrayIcon, ArrowsPointingInIcon, ArrowsPointingOutIcon, Bars3BottomLeftIcon, BoldIcon, CalendarDaysIcon, CalendarIcon, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardDocumentListIcon, Cog6ToothIcon, DocumentArrowDownIcon, EllipsisHorizontalIcon, EllipsisVerticalIcon, ExclamationCircleIcon, H1Icon, ItalicIcon, LinkIcon, ListBulletIcon, NumberedListIcon, PencilIcon, PhotoIcon, PlusIcon, RectangleStackIcon, Square3Stack3DIcon, Squares2X2Icon, TagIcon, TrashIcon, UnderlineIcon, VideoCameraIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { ArrowDownTrayIcon, ArrowLeftIcon, ArrowUpTrayIcon, ArrowsPointingInIcon, ArrowsPointingOutIcon, Bars3BottomLeftIcon, Bars3BottomRightIcon, Bars3Icon, BoldIcon, CalendarDaysIcon, CalendarIcon, CheckIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardDocumentListIcon, DocumentArrowDownIcon, EllipsisHorizontalIcon, EllipsisVerticalIcon, ExclamationCircleIcon, H1Icon, ItalicIcon, LinkIcon, ListBulletIcon, NumberedListIcon, PencilIcon, PhotoIcon, PlusIcon, RectangleStackIcon, Square3Stack3DIcon, Squares2X2Icon, TagIcon, TrashIcon, UnderlineIcon, VideoCameraIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import type {
   Project,
   ProjectBlock,
+  ProjectBlockAlign,
   ProjectBlockFit,
   ProjectBlockType,
   ProjectDetail,
@@ -30,7 +31,11 @@ import type {
 } from "@portofolio/shared";
 import { formatUploadSize, UPLOAD_LIMITS, validateUpload } from "@portofolio/shared";
 import { apiGet, apiSend, apiUpload } from "@/lib/api";
-import { registerProjectEditorReset, setProjectEditorMode } from "@/lib/project-editor-state";
+import {
+  registerProjectEditorReset,
+  setProjectEditorMode,
+  setProjectSaveStatus,
+} from "@/lib/project-editor-state";
 import { logoFromDomain } from "@/lib/campus-logo";
 import { resolveTechLogo, TECH_OPTIONS } from "@/lib/tech-logo";
 import {
@@ -51,6 +56,8 @@ import {
   DrawerPopup,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
+import { Dialog, DialogBackdrop, DialogPortal } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Menu,
@@ -242,6 +249,8 @@ export default function ProjectsSection({
   const selectionToastId = useRef<string | null>(null);
   const [viewMode, setViewMode] = useState<"card" | "list">("card");
   const [selection, setSelection] = useState<number | null>(null);
+  const [galleryPhotoIndex, setGalleryPhotoIndex] = useState<number>(0);
+  const [focusBlockIndex, setFocusBlockIndex] = useState<number | null>(null);
   const [projectTab, setProjectTab] = useState<"category" | "period" | "tech" | null>(null);
   const [saveStatus, setSaveStatus] = useState<
     "idle" | "pending" | "saving" | "saved" | "error"
@@ -272,6 +281,7 @@ export default function ProjectsSection({
   async function openEditor(item: Project | null) {
     isNewSessionRef.current = !item;
     setSelection(null);
+    setFocusBlockIndex(null);
     setProjectTab(null);
     setSaveStatus("idle");
     setSelectMode(false);
@@ -451,6 +461,7 @@ export default function ProjectsSection({
     const close = () => {
       setEditing(null);
       setSelection(null);
+      setFocusBlockIndex(null);
       setProjectTab(null);
     };
     if (!isDirty && editing.is_published === published) {
@@ -554,16 +565,74 @@ export default function ProjectsSection({
 
   useUnsavedChangesGuard({ isDirty, onSave: saveEditing, autoSaveOnLeave: true });
 
-  const hasSidebar = projectTab != null;
+  const textBlockHandles = useRef<Map<number, RichTextHandle>>(new Map());
+  const [textFormatVersion, setTextFormatVersion] = useState(0);
+
+  const registerTextHandle = useCallback((index: number, handle: RichTextHandle | null) => {
+    if (handle) textBlockHandles.current.set(index, handle);
+    else textBlockHandles.current.delete(index);
+  }, []);
+
+  const bumpTextFormat = useCallback(() => {
+    setTextFormatVersion((v) => v + 1);
+  }, []);
+
+  const selectedBlock = selection != null ? (editing?.content[selection] ?? null) : null;
+  const selectedMediaBlock =
+    selectedBlock && (selectedBlock.type === "image" || selectedBlock.type === "video")
+      ? selectedBlock
+      : null;
+  const selectedMobileBlock =
+    selectedBlock &&
+    (selectedBlock.type === "image" ||
+      selectedBlock.type === "video" ||
+      selectedBlock.type === "text")
+      ? selectedBlock
+      : null;
+  const selectedGalleryBlock =
+    selectedBlock && selectedBlock.type === "gallery" && selectedBlock.images.length > 0
+      ? selectedBlock
+      : null;
+  const hasSidebar = projectTab != null || selectedMediaBlock != null;
 
   function openProjectTab(tab: "category" | "period" | "tech" | null) {
     setSelection(null);
     setProjectTab(tab);
   }
 
-  function selectBlock(index: number) {
+  function selectBlock(index: number, photoIndex = 0) {
     setProjectTab(null);
+    setGalleryPhotoIndex(photoIndex);
     setSelection(index);
+  }
+
+  function updateSelectedBlock(patch: Partial<ProjectBlock>) {
+    if (selection == null) return;
+    setEditing((current) =>
+      current
+        ? {
+            ...current,
+            content: current.content.map((block, i) =>
+              i === selection ? ({ ...block, ...patch } as ProjectBlock) : block,
+            ),
+          }
+        : current,
+    );
+  }
+
+  function appendBlock(type: ProjectBlockType) {
+    if (!editing) return;
+    const hasTitle = editing.content.some((b) => b.type === "heading" && b.isTitle);
+    let next = newBlock(type);
+    if (type === "heading" && !hasTitle) {
+      next = { ...next, isTitle: true } as ProjectBlock;
+    }
+    const index = editing.content.length;
+    setEditing({ ...editing, content: [...editing.content, next] });
+    setFocusBlockIndex(index);
+    if (!isMobile && (type === "image" || type === "video")) {
+      selectBlock(index);
+    }
   }
 
   useEffect(() => {
@@ -609,6 +678,11 @@ export default function ProjectsSection({
         : null,
     );
   }, [editing]);
+
+  useEffect(() => {
+    setProjectSaveStatus(editing ? saveStatus : "idle");
+    return () => setProjectSaveStatus("idle");
+  }, [editing, saveStatus]);
 
   useEffect(() => {
     if (!editing) clearLocalFiles();
@@ -739,7 +813,14 @@ export default function ProjectsSection({
       )}
 
       {editing ? (
-        <div className="min-h-[calc(100svh-5rem)] space-y-4 lg:min-h-[calc(100svh-5.5rem)]">
+        <div
+          className={cn(
+            "min-h-[calc(100svh-5rem)] space-y-4 lg:min-h-[calc(100svh-5.5rem)]",
+            isMobile &&
+              selectedMobileBlock &&
+              (selectedMobileBlock.type === "text" ? "pb-52" : "pb-[52svh]"),
+          )}
+        >
           {isMobile && (
             <div className="sticky top-0 z-30 -mx-4 flex items-center gap-2.5 border-b bg-background/95 px-4 py-2.5 backdrop-blur">
               <Button
@@ -754,12 +835,29 @@ export default function ProjectsSection({
               <span className="min-w-0 flex-1 truncate font-medium text-sm">
                 {editing.id ? t("Ubah Proyek") : t("Tambah Proyek")}
               </span>
+              {saveStatus === "pending" || saveStatus === "saving" ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs text-muted-foreground">
+                  <Spinner className="size-3.5" />
+                  {t("Menyimpan…")}
+                </span>
+              ) : saveStatus === "saved" ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-success-foreground">
+                  <CheckIcon className="size-4" />
+                  {t("Tersimpan")}
+                </span>
+              ) : saveStatus === "error" ? (
+                <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-destructive">
+                  <ExclamationCircleIcon className="size-4" />
+                  {t("Gagal menyimpan")}
+                </span>
+              ) : null}
             </div>
           )}
 
           <form
             id="project-editor-form"
             noValidate
+            onClick={() => setSelection(null)}
             onSubmit={(e) => {
               e.preventDefault();
               submit();
@@ -801,9 +899,13 @@ export default function ProjectsSection({
                   {editing.media.length > 0 && (
                     <ContentEditor
                       blocks={editing.content}
-                      isMobile={isMobile}
+                      focusIndex={focusBlockIndex}
                       onChange={(content) => setEditing({ ...editing, content })}
+                      onDeselect={() => setSelection(null)}
+                      onFocusDone={() => setFocusBlockIndex(null)}
+                      onFormatStateChange={bumpTextFormat}
                       onSelect={selectBlock}
+                      registerTextHandle={registerTextHandle}
                       selectedIndex={selection}
                     />
                   )}
@@ -811,13 +913,23 @@ export default function ProjectsSection({
               </div>
 
               {!isMobile && hasSidebar && (
-                <aside className="sticky top-[78px] w-80 shrink-0 self-start">
+                <aside
+                  className="sticky top-[78px] w-80 shrink-0 self-start"
+                  onClick={(event) => event.stopPropagation()}
+                >
                   <EditorSidebar
                     categories={categories}
                     editing={editing}
+                    onChangeBlock={updateSelectedBlock}
                     onChangeProject={(patch) => setEditing({ ...editing, ...patch })}
-                    onClose={() => setProjectTab(null)}
+                    onClose={() => {
+                      setProjectTab(null);
+                      setSelection(null);
+                    }}
                     projectTab={projectTab}
+                    settingsBlock={selectedMediaBlock}
+                    textFormatVersion={textFormatVersion}
+                    textHandle={null}
                   />
                 </aside>
               )}
@@ -932,61 +1044,119 @@ export default function ProjectsSection({
       />
       </div>
 
+      {selectedGalleryBlock && (
+        <GallerySettingsOverlay
+          block={selectedGalleryBlock}
+          initialIndex={galleryPhotoIndex}
+          onChange={updateSelectedBlock}
+          onClose={() => setSelection(null)}
+        />
+      )}
+
+      {isMobile && selectedMobileBlock && (
+        <Drawer
+          modal={false}
+          onOpenChange={(open) => {
+            if (!open) setSelection(null);
+          }}
+          open
+          position="bottom"
+        >
+          <DrawerPopup className="max-h-[48svh]" showBackdrop={false} showBar showCloseButton>
+            <DrawerHeader className="px-6 pt-4 pb-1">
+              <DrawerTitle className="text-base">
+                {settingsBlockTitle(selectedMobileBlock)}
+              </DrawerTitle>
+            </DrawerHeader>
+            <DrawerPanel className="px-6 pt-2 pb-4" data-base-ui-swipe-ignore>
+              {selectedMobileBlock.type === "text" ? (
+                <TextBlockProperties
+                  formatVersion={textFormatVersion}
+                  handle={
+                    selection != null ? (textBlockHandles.current.get(selection) ?? null) : null
+                  }
+                />
+              ) : (
+                <MediaBlockProperties
+                  block={selectedMobileBlock}
+                  onChange={updateSelectedBlock}
+                />
+              )}
+            </DrawerPanel>
+          </DrawerPopup>
+        </Drawer>
+      )}
+
       {editing &&
         actionBarHost &&
         createPortal(
-          <div className="sticky bottom-0 z-30 shrink-0 border-t bg-background/95 px-4 py-3 backdrop-blur lg:px-6">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex min-w-0 items-center justify-start gap-2">
-                {!isNewSessionRef.current &&
-                  (editing.is_published ? (
-                    <Badge variant="success">{t("Terbit")}</Badge>
-                  ) : (
-                    <Badge variant="warning">{t("Draf")}</Badge>
-                  ))}
-                {saveStatus === "pending" || saveStatus === "saving" ? (
-                  <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <Spinner className="size-3.5" />
-                    {t("Menyimpan…")}
-                  </span>
-                ) : saveStatus === "saved" ? (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-success-foreground">
-                    <CheckIcon className="size-4" />
-                    {isNewSessionRef.current ? t("Tersimpan") : t("Perubahan telah disimpan")}
-                  </span>
-                ) : saveStatus === "error" ? (
-                  <span className="inline-flex items-center gap-1.5 text-sm font-medium text-destructive">
-                    <ExclamationCircleIcon className="size-4" />
-                    {t("Gagal menyimpan")}
-                  </span>
-                ) : null}
+          <div className="sticky bottom-0 z-30 shrink-0 border-t bg-background/95 backdrop-blur">
+            <div className="px-4 py-3 lg:px-6">
+                <div
+                  className={cn(
+                    "items-center gap-2",
+                    editing.media.length > 0
+                      ? "grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+                      : "flex justify-between",
+                  )}
+                >
+                  <div className="flex min-w-0 items-center justify-start gap-2">
+                    {!isNewSessionRef.current &&
+                      (editing.is_published ? (
+                        <Badge className="shrink-0" variant="success">{t("Terbit")}</Badge>
+                      ) : (
+                        <Badge className="shrink-0" variant="warning">{t("Draf")}</Badge>
+                      ))}
+                    {!isMobile &&
+                      (saveStatus === "pending" || saveStatus === "saving" ? (
+                        <span className="inline-flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+                          <Spinner className="size-3.5 shrink-0" />
+                          <span className="truncate">{t("Menyimpan…")}</span>
+                        </span>
+                      ) : saveStatus === "saved" ? (
+                        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium text-success-foreground">
+                          <CheckIcon className="size-4 shrink-0" />
+                          <span className="truncate">{t("Tersimpan")}</span>
+                        </span>
+                      ) : saveStatus === "error" ? (
+                        <span className="inline-flex min-w-0 items-center gap-1.5 text-sm font-medium text-destructive">
+                          <ExclamationCircleIcon className="size-4 shrink-0" />
+                          <span className="truncate">{t("Gagal menyimpan")}</span>
+                        </span>
+                      ) : null)}
+                  </div>
+                  {editing.media.length > 0 && (
+                    <div className="flex items-center justify-center">
+                      <AddBlockMenu compact onAdd={appendBlock} side="top" sideOffset={8} />
+                    </div>
+                  )}
+                  <div className="flex items-center justify-end gap-2">
+                    <Menu>
+                      <MenuTrigger
+                        render={
+                          <Button loading={saveMutation.isPending} type="button">
+                            <ArrowDownTrayIcon />
+                            {t("Simpan")}
+                            <ChevronDownIcon className="size-4" />
+                          </Button>
+                        }
+                      />
+                      <MenuPopup align="end" side="top" sideOffset={8} className="w-60">
+                        <MenuGroup>
+                          <MenuItem disabled={editing.media.length === 0} onClick={() => saveAndClose(true)}>
+                            {editing.is_published ? <ArrowDownTrayIcon /> : <ArrowUpTrayIcon />}
+                            {editing.is_published ? t("Simpan") : t("Simpan dan Publikasikan")}
+                          </MenuItem>
+                          <MenuItem onClick={() => saveAndClose(false)}>
+                            <DocumentArrowDownIcon />
+                            {t("Simpan Sebagai Draf")}
+                          </MenuItem>
+                        </MenuGroup>
+                      </MenuPopup>
+                    </Menu>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-end gap-2">
-                <Menu>
-                  <MenuTrigger
-                    render={
-                      <Button loading={saveMutation.isPending} type="button">
-                        <ArrowDownTrayIcon />
-                        {t("Simpan")}
-                        <ChevronDownIcon className="size-4" />
-                      </Button>
-                    }
-                  />
-                  <MenuPopup align="end" side="top" sideOffset={8} className="w-60">
-                    <MenuGroup>
-                      <MenuItem disabled={editing.media.length === 0} onClick={() => saveAndClose(true)}>
-                        {editing.is_published ? <ArrowDownTrayIcon /> : <ArrowUpTrayIcon />}
-                        {editing.is_published ? t("Simpan") : t("Simpan dan Publikasikan")}
-                      </MenuItem>
-                      <MenuItem onClick={() => saveAndClose(false)}>
-                        <DocumentArrowDownIcon />
-                        {t("Simpan Sebagai Draf")}
-                      </MenuItem>
-                    </MenuGroup>
-                  </MenuPopup>
-                </Menu>
-              </div>
-            </div>
           </div>,
           actionBarHost,
         )}
@@ -1100,23 +1270,58 @@ function CoverMediaField({
   children?: React.ReactNode;
 }) {
   const { t } = useLanguage();
+  const replaceInputRef = useRef<HTMLInputElement>(null);
   const item = media[0] ?? null;
+
+  function handleReplaceFiles(files: FileList | File[] | null) {
+    const list = files ? Array.from(files) : [];
+    if (list.length === 0) return;
+    for (const file of list) {
+      const validation = validateUpload(file);
+      if (!validation.ok) {
+        toastManager.add({
+          title: t("Gagal memilih {name}", { name: file.name }),
+          description: validation.message,
+          type: "error",
+        });
+        continue;
+      }
+      const isVideo = file.type.startsWith("video/");
+      const url = URL.createObjectURL(file);
+      registerLocalFile(url, file);
+      onChange([{ type: isVideo ? "video" : "image", url }]);
+      return;
+    }
+  }
 
   if (item) {
     return (
       <div className="relative">
         <MediaPreview type={item.type} url={item.url} />
         {children}
-        <Button
-          aria-label={t("Hapus media")}
-          className="absolute end-2 top-2 z-10"
-          onClick={() => onChange([])}
-          size="icon-sm"
+        <button
+          aria-label={t("Ganti foto")}
+          className="absolute end-2 top-2 z-10 inline-flex h-8 cursor-pointer items-center gap-1.5 rounded-lg border bg-background/85 px-2 text-xs font-medium text-foreground shadow-sm backdrop-blur transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:h-7 sm:px-2.5"
+          onClick={(event) => {
+            event.stopPropagation();
+            replaceInputRef.current?.click();
+          }}
           type="button"
-          variant="destructive"
         >
-          <TrashIcon />
-        </Button>
+          <PhotoIcon className="size-4 shrink-0 sm:size-3.5" />
+          {t("Ganti foto")}
+        </button>
+        <input
+          accept="image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+          className="hidden"
+          onChange={(event) => {
+            const files = event.target.files ? Array.from(event.target.files) : [];
+            event.target.value = "";
+            handleReplaceFiles(files);
+          }}
+          ref={replaceInputRef}
+          type="file"
+        />
       </div>
     );
   }
@@ -1589,6 +1794,21 @@ function placeCaretAtEnd(el: HTMLElement) {
   sel?.addRange(range);
 }
 
+interface TextFormatState {
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  unorderedList: boolean;
+  orderedList: boolean;
+}
+
+interface RichTextHandle {
+  exec: (command: "bold" | "italic" | "underline" | "removeFormat") => void;
+  toggleList: (command: "insertUnorderedList" | "insertOrderedList") => void;
+  insertLink: (url: string) => void;
+  getFormatState: () => TextFormatState;
+}
+
 function RichTextBlock({
   value,
   onChange,
@@ -1596,7 +1816,8 @@ function RichTextBlock({
   onAutoFocusDone,
   className,
   singleLine = false,
-  showTools = false,
+  registerHandle,
+  onFormatStateChange,
 }: {
   value: string;
   onChange: (html: string) => void;
@@ -1604,7 +1825,8 @@ function RichTextBlock({
   onAutoFocusDone?: () => void;
   className?: string;
   singleLine?: boolean;
-  showTools?: boolean;
+  registerHandle?: (handle: RichTextHandle | null) => void;
+  onFormatStateChange?: () => void;
 }) {
   const { t } = useLanguage();
   const isTouch = useMediaQuery("max-md");
@@ -1614,8 +1836,11 @@ function RichTextBlock({
   const savedRange = useRef<Range | null>(null);
   const isTouchRef = useRef(isTouch);
   isTouchRef.current = isTouch;
-  const [tools, setTools] = useState<{ top: number; left: number } | "anchor" | null>(null);
-  const [toolsExpanded, setToolsExpanded] = useState(false);
+  const [floatingTools, setFloatingTools] = useState<{ top: number; left: number } | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const onFormatStateChangeRef = useRef(onFormatStateChange);
+  onFormatStateChangeRef.current = onFormatStateChange;
 
   const seededRef = useRef(false);
   useEffect(() => {
@@ -1645,11 +1870,11 @@ function RichTextBlock({
     const sel = window.getSelection();
     sel?.removeAllRanges();
     sel?.addRange(range);
-    if (isTouchRef.current && showTools) setTools("anchor");
+    savedRange.current = range.cloneRange();
     onAutoFocusDone?.();
-  }, [autoFocus, onAutoFocusDone, showTools]);
+  }, [autoFocus, onAutoFocusDone]);
 
-  function emit() {
+  const emit = useCallback(() => {
     const el = editableRef.current;
     if (!el) return;
     let html = el.innerHTML;
@@ -1663,81 +1888,142 @@ function RichTextBlock({
       }
     }
     lastValue.current = html;
-    onChange(html);
-  }
+    onChangeRef.current(html);
+  }, [singleLine]);
 
-  function refreshTools() {
-    if (!showTools) return;
+  const captureSelection = useCallback(() => {
     const sel = window.getSelection();
     const el = editableRef.current;
     const container = containerRef.current;
-    if (!el || !container) {
-      setTools(null);
+    if (!el || !sel || sel.rangeCount === 0) {
+      setFloatingTools(null);
       return;
     }
-    if (sel && sel.rangeCount > 0 && !sel.isCollapsed && el.contains(sel.anchorNode)) {
+    if (el.contains(sel.anchorNode)) {
       const range = sel.getRangeAt(0);
       savedRange.current = range.cloneRange();
-      const rect = range.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-      setTools({ top: rect.top - containerRect.top - 44, left: rect.left - containerRect.left });
-      return;
+      onFormatStateChangeRef.current?.();
+      if (!isTouchRef.current && registerHandle && container && !sel.isCollapsed) {
+        const rect = range.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        setFloatingTools({
+          top: rect.top - containerRect.top - 44,
+          left: rect.left - containerRect.left,
+        });
+        return;
+      }
     }
-    if (tools !== "anchor") setTools(null);
-  }
+    setFloatingTools(null);
+  }, [registerHandle]);
 
-  const refreshToolsRef = useRef(refreshTools);
-  refreshToolsRef.current = refreshTools;
-
-  useEffect(() => {
-    if (!showTools) return;
-    const handler = () => refreshToolsRef.current();
-    document.addEventListener("selectionchange", handler);
-    return () => document.removeEventListener("selectionchange", handler);
-  }, [showTools]);
+  const handleRef = useRef<RichTextHandle | null>(null);
 
   useEffect(() => {
-    if (!tools) setToolsExpanded(false);
-  }, [tools]);
+    if (!registerHandle) return;
+    document.addEventListener("selectionchange", captureSelection);
+    return () => document.removeEventListener("selectionchange", captureSelection);
+  }, [registerHandle, captureSelection]);
 
-  function restoreSelection() {
-    const el = editableRef.current;
-    const range = savedRange.current;
-    if (!el) return;
-    el.focus();
-    if (range) {
+  useEffect(() => {
+    if (!registerHandle) return;
+
+    function restoreSelection() {
+      const el = editableRef.current;
+      if (!el) return;
+      el.focus();
+      const range = savedRange.current;
+      if (range && el.contains(range.commonAncestorContainer)) {
+        const sel = window.getSelection();
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      } else {
+        placeCaretAtEnd(el);
+      }
+    }
+
+    function syncSavedRange() {
       const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      const el = editableRef.current;
+      if (el && sel && sel.rangeCount > 0 && el.contains(sel.anchorNode)) {
+        savedRange.current = sel.getRangeAt(0).cloneRange();
+      }
     }
-  }
 
-  function exec(command: string) {
-    restoreSelection();
-    document.execCommand(command);
-    emit();
-    if (isTouchRef.current) setTools("anchor");
-  }
+    const handle: RichTextHandle = {
+      exec(command) {
+        restoreSelection();
+        document.execCommand(command);
+        syncSavedRange();
+        emit();
+        onFormatStateChangeRef.current?.();
+      },
+      toggleList(command) {
+        restoreSelection();
+        document.execCommand(command);
+        syncSavedRange();
+        emit();
+        onFormatStateChangeRef.current?.();
+      },
+      insertLink(url) {
+        restoreSelection();
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
+          document.execCommand("createLink", false, url);
+        } else {
+          document.execCommand(
+            "insertHTML",
+            false,
+            `<a href="${url.replace(/"/g, "&quot;")}">${url}</a>`,
+          );
+        }
+        syncSavedRange();
+        emit();
+        onFormatStateChangeRef.current?.();
+      },
+      getFormatState() {
+        const el = editableRef.current;
+        const sel = window.getSelection();
+        if (!el || !sel || sel.rangeCount === 0 || !el.contains(sel.anchorNode)) {
+          return {
+            bold: false,
+            italic: false,
+            underline: false,
+            unorderedList: false,
+            orderedList: false,
+          };
+        }
+        try {
+          return {
+            bold: document.queryCommandState("bold"),
+            italic: document.queryCommandState("italic"),
+            underline: document.queryCommandState("underline"),
+            unorderedList: document.queryCommandState("insertUnorderedList"),
+            orderedList: document.queryCommandState("insertOrderedList"),
+          };
+        } catch {
+          return {
+            bold: false,
+            italic: false,
+            underline: false,
+            unorderedList: false,
+            orderedList: false,
+          };
+        }
+      },
+    };
 
-  function insertLink() {
+    handleRef.current = handle;
+    registerHandle(handle);
+    return () => {
+      handleRef.current = null;
+      registerHandle(null);
+    };
+  }, [registerHandle, emit]);
+
+  function promptInsertLink() {
     const url = window.prompt(t("Masukkan URL tautan:"));
     if (!url) return;
-    restoreSelection();
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && !selection.isCollapsed) {
-      document.execCommand("createLink", false, url);
-    } else {
-      document.execCommand("insertHTML", false, `<a href="${url.replace(/"/g, "&quot;")}">${url}</a>`);
-    }
-    emit();
-    if (isTouchRef.current) setTools("anchor");
-  }
-
-  function toggleList(command: "insertUnorderedList" | "insertOrderedList") {
-    restoreSelection();
-    document.execCommand(command);
-    emit();
-    if (isTouchRef.current) setTools("anchor");
+    handleRef.current?.insertLink(url);
   }
 
   return (
@@ -1749,7 +2035,7 @@ function RichTextBlock({
         )}
         contentEditable
         onBlur={() => {
-          window.setTimeout(() => setTools(null), 150);
+          window.setTimeout(() => setFloatingTools(null), 150);
         }}
         onInput={emit}
         onKeyDown={(event) => {
@@ -1759,8 +2045,8 @@ function RichTextBlock({
             if (key === "b" || key === "i" || key === "u") event.preventDefault();
           }
         }}
-        onKeyUp={refreshTools}
-        onMouseUp={refreshTools}
+        onKeyUp={captureSelection}
+        onMouseUp={captureSelection}
         onPaste={(event) => {
           if (!singleLine) return;
           event.preventDefault();
@@ -1774,70 +2060,52 @@ function RichTextBlock({
         suppressContentEditableWarning
       />
 
-      {showTools && tools && (
+      {!isTouch && registerHandle && floatingTools && (
         <div
-          className={cn("absolute z-20", tools === "anchor" && "-top-4 end-0")}
+          className="absolute z-20"
           onMouseDown={(event) => event.preventDefault()}
-          style={tools === "anchor" ? undefined : { top: tools.top, left: tools.left }}
+          style={{ top: floatingTools.top, left: floatingTools.left }}
         >
           <div className="flex max-w-[calc(100vw-2rem)] flex-wrap items-center gap-0.5 rounded-lg border bg-popover p-1 shadow-md">
-            {(!isTouch || !toolsExpanded) && (
-              <>
-                <Toggle
-                  aria-label={t("Tebal")}
-                  onPressedChange={() => exec("bold")}
-                  size="sm"
-                  type="button"
-                >
-                  <BoldIcon />
-                </Toggle>
-                <Toggle
-                  aria-label={t("Miring")}
-                  onPressedChange={() => exec("italic")}
-                  size="sm"
-                  type="button"
-                >
-                  <ItalicIcon />
-                </Toggle>
-                <Toggle
-                  aria-label={t("Garis bawah")}
-                  onPressedChange={() => exec("underline")}
-                  size="sm"
-                  type="button"
-                >
-                  <UnderlineIcon />
-                </Toggle>
-                <Button
-                  aria-label={t("Tautan")}
-                  className="text-muted-foreground"
-                  onClick={insertLink}
-                  size="icon-sm"
-                  type="button"
-                  variant="ghost"
-                >
-                  <LinkIcon />
-                </Button>
-              </>
-            )}
-
-            {isTouch && (
-              <Button
-                aria-label={toolsExpanded ? t("Kembali ke opsi format") : t("Buka opsi format")}
-                className="text-muted-foreground"
-                onClick={() => setToolsExpanded((v) => !v)}
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-              >
-                {toolsExpanded ? <ChevronLeftIcon /> : <ChevronRightIcon />}
-              </Button>
-            )}
-
+            <Toggle
+              aria-label={t("Tebal")}
+              onPressedChange={() => handleRef.current?.exec("bold")}
+              size="sm"
+              type="button"
+            >
+              <BoldIcon />
+            </Toggle>
+            <Toggle
+              aria-label={t("Miring")}
+              onPressedChange={() => handleRef.current?.exec("italic")}
+              size="sm"
+              type="button"
+            >
+              <ItalicIcon />
+            </Toggle>
+            <Toggle
+              aria-label={t("Garis bawah")}
+              onPressedChange={() => handleRef.current?.exec("underline")}
+              size="sm"
+              type="button"
+            >
+              <UnderlineIcon />
+            </Toggle>
+            <Button
+              aria-label={t("Tautan")}
+              className="text-muted-foreground"
+              onClick={promptInsertLink}
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <LinkIcon />
+            </Button>
             <span className="mx-0.5 h-5 w-px bg-border" />
             <Button
               aria-label={t("Daftar poin")}
               className="text-muted-foreground"
-              onClick={() => toggleList("insertUnorderedList")}
+              onClick={() => handleRef.current?.toggleList("insertUnorderedList")}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -1847,7 +2115,7 @@ function RichTextBlock({
             <Button
               aria-label={t("Daftar angka")}
               className="text-muted-foreground"
-              onClick={() => toggleList("insertOrderedList")}
+              onClick={() => handleRef.current?.toggleList("insertOrderedList")}
               size="icon-sm"
               type="button"
               variant="ghost"
@@ -1899,28 +2167,109 @@ function logoFromUrl(url: string): string | null {
   return host ? logoFromDomain(host) : null;
 }
 
+function AddBlockMenu({
+  onAdd,
+  side = "bottom",
+  sideOffset,
+  compact = false,
+}: {
+  onAdd: (type: ProjectBlockType) => void;
+  side?: "top" | "bottom";
+  sideOffset?: number;
+  compact?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const { t } = useLanguage();
+
+  return (
+    <Menu open={open} onOpenChange={setOpen}>
+      <MenuTrigger
+        render={
+          compact ? (
+            <Button
+              aria-label={t("Tambah Blok")}
+              className="w-9 px-0 text-muted-foreground sm:w-auto sm:px-[calc(--spacing(3)-1px)]"
+              title={t("Tambah Blok")}
+              type="button"
+              variant="outline"
+            >
+              <PlusIcon />
+              <span className="hidden sm:inline">{t("Tambah Blok")}</span>
+            </Button>
+          ) : (
+            <Button className="text-muted-foreground" size="sm" type="button" variant="outline">
+              <PlusIcon /> {t("Tambah Blok")}
+            </Button>
+          )
+        }
+      />
+      <MenuPopup align="center" side={side} sideOffset={sideOffset}>
+        <MenuGroup>
+          <MenuGroupLabel>{t("Tambah blok")}</MenuGroupLabel>
+          <MenuItem onClick={() => onAdd("heading")}>
+            <H1Icon />
+            {t("Judul")}
+          </MenuItem>
+          <MenuItem onClick={() => onAdd("text")}>
+            <Bars3BottomLeftIcon />
+            {t("Teks")}
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem onClick={() => onAdd("image")}>
+            <PhotoIcon />
+            {t("Gambar")}
+          </MenuItem>
+          <MenuItem onClick={() => onAdd("video")}>
+            <VideoCameraIcon />
+            Video
+          </MenuItem>
+          <MenuItem onClick={() => onAdd("gallery")}>
+            <PhotoIcon />
+            {t("Galeri")}
+          </MenuItem>
+          <MenuSeparator />
+          <MenuItem onClick={() => onAdd("link")}>
+            <LinkIcon />
+            {t("Tautan")}
+          </MenuItem>
+        </MenuGroup>
+      </MenuPopup>
+    </Menu>
+  );
+}
+
 function ContentEditor({
   blocks,
   onChange,
+  focusIndex,
+  onFocusDone,
   selectedIndex,
   onSelect,
-  isMobile,
+  onDeselect,
+  registerTextHandle,
+  onFormatStateChange,
 }: {
   blocks: ProjectBlock[];
   onChange: (blocks: ProjectBlock[]) => void;
+  focusIndex: number | null;
+  onFocusDone: () => void;
   selectedIndex?: number | null;
-  onSelect?: (index: number) => void;
-  isMobile?: boolean;
+  onSelect?: (index: number, photoIndex?: number) => void;
+  onDeselect?: () => void;
+  registerTextHandle?: (index: number, handle: RichTextHandle | null) => void;
+  onFormatStateChange?: () => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
-  const [focusIndex, setFocusIndex] = useState<number | null>(null);
-  const [addBlockOpen, setAddBlockOpen] = useState(false);
-  const { t } = useLanguage();
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    onChange(arrayMove(blocks, Number(active.id), Number(over.id)));
+    const from = Number(active.id);
+    const to = Number(over.id);
+    onChange(arrayMove(blocks, from, to));
+    if (selectedIndex === from) {
+      onSelect?.(to);
+    }
   }
 
   function updateBlock(index: number, patch: Partial<ProjectBlock>) {
@@ -1931,110 +2280,49 @@ function ContentEditor({
 
   function removeBlock(index: number) {
     onChange(blocks.filter((_, i) => i !== index));
-  }
-
-  function appendBlock(type: ProjectBlockType, block?: ProjectBlock) {
-    const hasTitle = blocks.some((b) => b.type === "heading" && b.isTitle);
-    let next = block ?? newBlock(type);
-    if (type === "heading" && !hasTitle && !block) {
-      next = { ...next, isTitle: true } as ProjectBlock;
+    if (selectedIndex === index) {
+      onDeselect?.();
+    } else if (selectedIndex != null && selectedIndex > index) {
+      onSelect?.(selectedIndex - 1);
     }
-    const index = blocks.length;
-    onChange([...blocks, next]);
-    setFocusIndex(index);
-    if (type === "image" || type === "video") onSelect?.(index);
   }
 
-  const addBlockMenu = (
-    <Menu open={addBlockOpen} onOpenChange={setAddBlockOpen}>
-      <MenuTrigger
-        render={
-          <Button className="text-muted-foreground" size="sm" variant="outline">
-            <PlusIcon /> {t("Tambah Blok")}
-          </Button>
-        }
-      />
-      <MenuPopup align="center" side="bottom">
-        <MenuGroup>
-          <MenuGroupLabel>{t("Tambah blok")}</MenuGroupLabel>
-          <MenuItem onClick={() => appendBlock("heading")}>
-            <H1Icon />
-            {t("Judul")}
-          </MenuItem>
-          <MenuItem onClick={() => appendBlock("text")}>
-            <Bars3BottomLeftIcon />
-            {t("Teks")}
-          </MenuItem>
-          <MenuSeparator />
-          <MenuItem onClick={() => appendBlock("image")}>
-            <PhotoIcon />
-            {t("Gambar")}
-          </MenuItem>
-          <MenuItem onClick={() => appendBlock("video")}>
-            <VideoCameraIcon />
-            Video
-          </MenuItem>
-          <MenuItem onClick={() => appendBlock("gallery")}>
-            <PhotoIcon />
-            {t("Galeri")}
-          </MenuItem>
-          <MenuSeparator />
-          <MenuItem onClick={() => appendBlock("link")}>
-            <LinkIcon />
-            {t("Tautan")}
-          </MenuItem>
-        </MenuGroup>
-      </MenuPopup>
-    </Menu>
-  );
+  if (blocks.length === 0) return null;
 
   return (
-    <div>
-      {blocks.length === 0 ? (
-        <div className="flex items-center gap-3">
-          <div className="h-px flex-1 bg-border" />
-          {addBlockMenu}
-          <div className="h-px flex-1 bg-border" />
-        </div>
-      ) : (
-        <>
-          <DndContext
-            collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
-            sensors={sensors}
-          >
-            <SortableContext
-              items={blocks.map((_, i) => i)}
-              strategy={verticalListSortingStrategy}
-            >
-              <ul className="space-y-7 lg:space-y-3">
-                {blocks.map((block, index) => (
-                  <li key={index}>
-                    <SortableCanvasBlock
-                      autoFocus={focusIndex === index}
-                      block={block}
-                      id={index}
-                      isMobile={isMobile}
-                      onChange={(patch) => updateBlock(index, patch)}
-                      onAutoFocusDone={() => setFocusIndex(null)}
-                      onRemove={() => removeBlock(index)}
-                      onSelect={onSelect ? () => onSelect(index) : undefined}
-                      selected={selectedIndex === index}
-                    />
-                  </li>
-                ))}
-              </ul>
-            </SortableContext>
-          </DndContext>
-
-          <div className="flex items-center gap-3 pt-3">
-            <div className="h-px flex-1 bg-border" />
-            {addBlockMenu}
-            <div className="h-px flex-1 bg-border" />
-          </div>
-        </>
-      )}
-    </div>
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+      sensors={sensors}
+    >
+      <SortableContext
+        items={blocks.map((_, i) => i)}
+        strategy={verticalListSortingStrategy}
+      >
+        <ul className="space-y-8 lg:space-y-3">
+          {blocks.map((block, index) => (
+            <li key={index}>
+              <SortableCanvasBlock
+                autoFocus={focusIndex === index}
+                block={block}
+                id={index}
+                onChange={(patch) => updateBlock(index, patch)}
+                onAutoFocusDone={onFocusDone}
+                onFormatStateChange={onFormatStateChange}
+                onRemove={() => removeBlock(index)}
+                onSelect={onSelect ? (photoIndex?: number) => onSelect(index, photoIndex) : undefined}
+                registerTextHandle={
+                  registerTextHandle
+                    ? (handle) => registerTextHandle(index, handle)
+                    : undefined
+                }
+                selected={selectedIndex === index}
+              />
+            </li>
+          ))}
+        </ul>
+      </SortableContext>
+    </DndContext>
   );
 }
 
@@ -2047,7 +2335,8 @@ function SortableCanvasBlock({
   onAutoFocusDone,
   selected,
   onSelect,
-  isMobile,
+  registerTextHandle,
+  onFormatStateChange,
 }: {
   id: number;
   block: ProjectBlock;
@@ -2056,22 +2345,42 @@ function SortableCanvasBlock({
   autoFocus?: boolean;
   onAutoFocusDone?: () => void;
   selected?: boolean;
-  onSelect?: () => void;
-  isMobile?: boolean;
+  onSelect?: (photoIndex?: number) => void;
+  registerTextHandle?: (handle: RichTextHandle | null) => void;
+  onFormatStateChange?: () => void;
 }) {
   const isTitle = block.type === "heading" && !!block.isTitle;
+  const isMobile = useMediaQuery("max-md");
+  const blockElRef = useRef<HTMLDivElement | null>(null);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
     disabled: isTitle,
   });
+
+  useEffect(() => {
+    if (!selected || !isMobile) return;
+    const frame = requestAnimationFrame(() => {
+      blockElRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [selected, isMobile]);
   const style = {
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     transition,
   };
 
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const { t } = useLanguage();
-  const showSettings = block.type === "image" || block.type === "video";
+  const fitAlignClass =
+    (block.type === "image" || block.type === "video") && block.url && block.fit === "fit"
+      ? cn(
+          block.type === "video" ? "w-[65%]" : "w-fit max-w-[65%]",
+          block.align === "left"
+            ? "me-auto ms-0"
+            : block.align === "right"
+              ? "ms-auto me-0"
+              : "mx-auto",
+        )
+      : undefined;
 
   return (
     <div
@@ -2079,14 +2388,25 @@ function SortableCanvasBlock({
         "group relative rounded-xl border-2 transition-colors",
         selected ? "border-primary" : "border-transparent hover:border-border",
         isDragging && "z-10",
-        block.type === "image" && block.fit === "fit" && "mx-auto w-fit",
+        fitAlignClass,
       )}
-      onClick={onSelect}
-      ref={setNodeRef}
+      onClick={(event) => {
+        event.stopPropagation();
+        onSelect?.();
+      }}
+      ref={(node) => {
+        blockElRef.current = node;
+        setNodeRef(node);
+      }}
       style={style}
     >
       {!isTitle && (
-      <div className="absolute -top-4 start-2 z-20 flex flex-row items-center gap-0.5 rounded-lg border bg-background p-0.5 opacity-100 shadow-xs transition-opacity lg:-start-6 lg:top-1/2 lg:-translate-y-1/2 lg:flex-col lg:border-0 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100">
+      <div
+        className={cn(
+          "absolute bottom-full start-0 z-20 mb-1.5 flex-row items-center gap-0.5 rounded-lg border bg-background p-0.5 shadow-xs transition-opacity lg:bottom-auto lg:-start-6 lg:top-1/2 lg:mb-0 lg:-translate-y-1/2 lg:flex lg:flex-col lg:border-0 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100",
+          selected ? "flex" : "hidden",
+        )}
+      >
         <Button
           aria-label={t("Geser blok")}
           className="cursor-grab text-muted-foreground"
@@ -2101,7 +2421,10 @@ function SortableCanvasBlock({
         <button
           aria-label={t("Hapus blok")}
           className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md text-destructive outline-none transition-colors hover:text-destructive/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6"
-          onClick={onRemove}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRemove();
+          }}
           type="button"
         >
           <TrashIcon className="size-4" />
@@ -2114,23 +2437,10 @@ function SortableCanvasBlock({
         block={block}
         onChange={onChange}
         onAutoFocusDone={onAutoFocusDone}
-        onOpenSettings={showSettings && isMobile ? () => setSettingsOpen(true) : undefined}
+        onFormatStateChange={onFormatStateChange}
+        onSelectPhoto={onSelect}
+        registerTextHandle={registerTextHandle}
       />
-
-      {showSettings && isMobile && (
-        <Drawer onOpenChange={setSettingsOpen} open={settingsOpen} position="bottom">
-          <DrawerPopup showBar>
-            <DrawerHeader className="px-6 pt-4 pb-1">
-              <DrawerTitle className="text-base">
-                {block.type === "video" ? t("Pengaturan Video") : t("Pengaturan Gambar")}
-              </DrawerTitle>
-            </DrawerHeader>
-            <DrawerPanel className="px-6 pt-1 pb-4" data-base-ui-swipe-ignore>
-              <MediaBlockProperties block={block} onChange={onChange} />
-            </DrawerPanel>
-          </DrawerPopup>
-        </Drawer>
-      )}
     </div>
   );
 }
@@ -2144,13 +2454,17 @@ function CanvasBlockContent({
   onChange,
   autoFocus,
   onAutoFocusDone,
-  onOpenSettings,
+  onSelectPhoto,
+  registerTextHandle,
+  onFormatStateChange,
 }: {
   block: ProjectBlock;
   onChange: (patch: Partial<ProjectBlock>) => void;
   autoFocus?: boolean;
   onAutoFocusDone?: () => void;
-  onOpenSettings?: () => void;
+  onSelectPhoto?: (photoIndex: number) => void;
+  registerTextHandle?: (handle: RichTextHandle | null) => void;
+  onFormatStateChange?: () => void;
 }) {
   if (block.type === "heading") {
     return (
@@ -2172,8 +2486,6 @@ function CanvasBlockContent({
           kind={block.type}
           onChange={(url) => onChange({ url })}
           onAutoOpenDone={onAutoFocusDone}
-          onFitChange={(fit) => onChange({ fit })}
-          onOpenSettings={onOpenSettings}
           value={block.url}
         />
         {block.caption?.trim() ? (
@@ -2190,6 +2502,8 @@ function CanvasBlockContent({
         block={block}
         onChange={onChange}
         onAutoFocusDone={onAutoFocusDone}
+        onFormatStateChange={onFormatStateChange}
+        registerHandle={registerTextHandle}
       />
     );
   }
@@ -2197,9 +2511,11 @@ function CanvasBlockContent({
   if (block.type === "gallery") {
     return (
       <CanvasGalleryBlock
+        autoFocus={autoFocus}
         block={block}
         onChange={onChange}
         onAutoFocusDone={onAutoFocusDone}
+        onSelectPhoto={onSelectPhoto}
       />
     );
   }
@@ -2264,11 +2580,15 @@ function CanvasTextBlock({
   onChange,
   autoFocus,
   onAutoFocusDone,
+  registerHandle,
+  onFormatStateChange,
 }: {
   block: ProjectTextBlock;
   onChange: (patch: Partial<ProjectBlock>) => void;
   autoFocus?: boolean;
   onAutoFocusDone?: () => void;
+  registerHandle?: (handle: RichTextHandle | null) => void;
+  onFormatStateChange?: () => void;
 }) {
   return (
     <div className="min-w-0 px-2 py-1">
@@ -2277,7 +2597,8 @@ function CanvasTextBlock({
         className="w-full text-base leading-relaxed text-foreground [&:empty]:before:text-muted-foreground [&:empty]:before:content-['Teks']"
         onChange={(html) => onChange({ text: html })}
         onAutoFocusDone={onAutoFocusDone}
-        showTools
+        onFormatStateChange={onFormatStateChange}
+        registerHandle={registerHandle}
         value={block.text}
       />
     </div>
@@ -2287,11 +2608,15 @@ function CanvasTextBlock({
 function CanvasGalleryBlock({
   block,
   onChange,
+  autoFocus,
   onAutoFocusDone,
+  onSelectPhoto,
 }: {
   block: ProjectGalleryBlock;
   onChange: (patch: Partial<ProjectBlock>) => void;
+  autoFocus?: boolean;
   onAutoFocusDone?: () => void;
+  onSelectPhoto?: (photoIndex: number) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -2299,8 +2624,11 @@ function CanvasGalleryBlock({
   const { t } = useLanguage();
 
   useEffect(() => {
-    onAutoFocusDone?.();
-  }, [onAutoFocusDone]);
+    if (autoFocus && block.images.length === 0 && inputRef.current) {
+      inputRef.current.click();
+      onAutoFocusDone?.();
+    }
+  }, [autoFocus, block.images.length, onAutoFocusDone]);
 
   function handleFiles(files: FileList | File[] | null) {
     const list = files ? Array.from(files) : [];
@@ -2325,59 +2653,60 @@ function CanvasGalleryBlock({
   }
 
   return (
-    <div className="flex items-stretch gap-2">
-      <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto pb-1">
-        {block.images.map((image, index) => (
-          <div className="relative w-40 shrink-0" key={index}>
-            <img
-              alt=""
-              className="aspect-video w-full rounded-lg border object-cover"
-              src={image.url}
-            />
+    <div
+      className={cn(
+        "rounded-xl transition-colors",
+        dragging && "bg-accent/40",
+      )}
+      onDragLeave={() => setDragging(false)}
+      onDragOver={(event) => {
+        event.preventDefault();
+        setDragging(true);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        setDragging(false);
+        handleFiles(event.dataTransfer.files);
+      }}
+    >
+      {block.images.length > 0 ? (
+        <div className="flex min-w-0 gap-2 overflow-x-auto pb-1">
+          {block.images.map((image, index) => (
             <button
-              aria-label={t("Hapus gambar")}
-              className="absolute end-1 top-1 grid size-6 cursor-pointer place-items-center rounded-md bg-black/60 text-white outline-none transition-colors hover:bg-black/80 focus-visible:ring-2 focus-visible:ring-ring"
-              onClick={() =>
-                onChange({ images: block.images.filter((_, i) => i !== index) })
-              }
+              className="relative w-40 shrink-0 cursor-pointer overflow-hidden rounded-lg border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              key={index}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectPhoto?.(index);
+              }}
               type="button"
             >
-              <TrashIcon className="size-3.5" />
+              <img
+                alt={image.caption ?? ""}
+                className="aspect-video w-full object-cover"
+                src={image.url}
+              />
             </button>
-          </div>
-        ))}
-        {block.images.length === 0 && (
-          <div className="grid flex-1 place-items-center rounded-xl border border-dashed p-6 text-center text-muted-foreground text-sm">
-            <PhotoIcon className="mb-2 size-5" />
-            {t("Belum ada foto — tambah dari sisi kanan")}
-          </div>
-        )}
-      </div>
-
-      <div
-        className={cn(
-          "flex w-40 shrink-0 cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border border-dashed p-4 text-center text-sm transition-colors",
-          dragging
-            ? "border-primary bg-accent"
-            : "border-input text-muted-foreground hover:bg-accent/50 hover:text-foreground",
-        )}
-        onClick={() => inputRef.current?.click()}
-        onDragLeave={() => setDragging(false)}
-        onDragOver={(event) => {
-          event.preventDefault();
-          setDragging(true);
-        }}
-        onDrop={(event) => {
-          event.preventDefault();
-          setDragging(false);
-          handleFiles(event.dataTransfer.files);
-        }}
-        role="button"
-        tabIndex={0}
-      >
-        <PlusIcon className="size-5" />
-        <span className="font-medium">{t("Tambah Foto")}</span>
-      </div>
+          ))}
+        </div>
+      ) : (
+        <div
+          className={cn(
+            "flex w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-6 text-center transition-colors",
+            dragging ? "border-primary bg-accent" : "border-input hover:bg-accent/50",
+          )}
+          onClick={(event) => {
+            event.stopPropagation();
+            inputRef.current?.click();
+          }}
+          role="button"
+          tabIndex={0}
+        >
+          <PhotoIcon className="size-5 text-muted-foreground" />
+          <p className="font-medium text-sm">{t("Unggah gambar")}</p>
+          <p className="text-muted-foreground text-xs">{t("PNG/JPG/WEBP/GIF — maks 5MB")}</p>
+        </div>
+      )}
       <input
         accept="image/png,image/jpeg,image/webp,image/gif"
         className="hidden"
@@ -2394,24 +2723,45 @@ function CanvasGalleryBlock({
   );
 }
 
+function settingsBlockTitle(block: ProjectBlock): string {
+  if (block.type === "video") return translate("Pengaturan Video");
+  if (block.type === "gallery") return translate("Pengaturan Galeri");
+  if (block.type === "text") return translate("Pengaturan Teks");
+  return translate("Pengaturan Gambar");
+}
+
 function EditorSidebar({
   projectTab,
+  settingsBlock,
+  textHandle,
+  textFormatVersion,
   editing,
   categories,
   onChangeProject,
+  onChangeBlock,
   onClose,
 }: {
-  projectTab: "category" | "period" | "tech";
+  projectTab: "category" | "period" | "tech" | null;
+  settingsBlock: ProjectBlock | null;
+  textHandle: RichTextHandle | null;
+  textFormatVersion: number;
   editing: ProjectForm;
   categories: string[];
   onChangeProject: (patch: Partial<ProjectForm>) => void;
+  onChangeBlock: (patch: Partial<ProjectBlock>) => void;
   onClose: () => void;
 }) {
   const { t } = useLanguage();
+  const heading = projectTab
+    ? projectTabLabel(projectTab)
+    : settingsBlock
+      ? settingsBlockTitle(settingsBlock)
+      : "";
+
   return (
     <div className="space-y-4 rounded-2xl border bg-card p-4">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-semibold text-base">{projectTabLabel(projectTab)}</h2>
+        <h2 className="font-semibold text-base">{heading}</h2>
         <Button
           aria-label={t("Tutup panel")}
           className="text-muted-foreground"
@@ -2423,12 +2773,168 @@ function EditorSidebar({
           <XMarkIcon />
         </Button>
       </div>
-      <ProjectDataPanel
-        categories={categories}
-        editing={editing}
-        onChange={onChangeProject}
-        tab={projectTab}
-      />
+      {projectTab ? (
+        <ProjectDataPanel
+          categories={categories}
+          editing={editing}
+          onChange={onChangeProject}
+          tab={projectTab}
+        />
+      ) : settingsBlock?.type === "text" ? (
+        <TextBlockProperties formatVersion={textFormatVersion} handle={textHandle} />
+      ) : settingsBlock ? (
+        <MediaBlockProperties block={settingsBlock} onChange={onChangeBlock} />
+      ) : null}
+    </div>
+  );
+}
+
+function TextBlockProperties({
+  handle,
+  formatVersion,
+}: {
+  handle: RichTextHandle | null;
+  formatVersion: number;
+}) {
+  const { t } = useLanguage();
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
+  void formatVersion;
+  const format = handle?.getFormatState() ?? {
+    bold: false,
+    italic: false,
+    underline: false,
+    unorderedList: false,
+    orderedList: false,
+  };
+
+  function applyLink() {
+    const trimmed = linkUrl.trim();
+    if (!trimmed) return;
+    const normalized =
+      /^https?:\/\//i.test(trimmed) || trimmed.startsWith("mailto:")
+        ? trimmed
+        : `https://${trimmed}`;
+    handle?.insertLink(normalized);
+    setLinkUrl("");
+    setLinkOpen(false);
+  }
+
+  return (
+    <div className="space-y-3">
+      <div
+        className="flex flex-wrap items-center justify-center gap-2"
+        onMouseDown={(event) => event.preventDefault()}
+      >
+        <Button
+          aria-label={t("Tebal")}
+          aria-pressed={format.bold}
+          className="size-11 [&_svg]:size-5"
+          onClick={() => handle?.exec("bold")}
+          size="icon"
+          title={t("Tebal")}
+          type="button"
+          variant={format.bold ? "default" : "outline"}
+        >
+          <BoldIcon />
+        </Button>
+        <Button
+          aria-label={t("Miring")}
+          aria-pressed={format.italic}
+          className="size-11 [&_svg]:size-5"
+          onClick={() => handle?.exec("italic")}
+          size="icon"
+          title={t("Miring")}
+          type="button"
+          variant={format.italic ? "default" : "outline"}
+        >
+          <ItalicIcon />
+        </Button>
+        <Button
+          aria-label={t("Garis bawah")}
+          aria-pressed={format.underline}
+          className="size-11 [&_svg]:size-5"
+          onClick={() => handle?.exec("underline")}
+          size="icon"
+          title={t("Garis bawah")}
+          type="button"
+          variant={format.underline ? "default" : "outline"}
+        >
+          <UnderlineIcon />
+        </Button>
+
+        <span className="mx-0.5 h-6 w-px bg-border" />
+
+        <Button
+          aria-label={t("Daftar poin")}
+          aria-pressed={format.unorderedList}
+          className="size-11 [&_svg]:size-5"
+          onClick={() => handle?.toggleList("insertUnorderedList")}
+          size="icon"
+          title={t("Daftar poin")}
+          type="button"
+          variant={format.unorderedList ? "default" : "outline"}
+        >
+          <ListBulletIcon />
+        </Button>
+        <Button
+          aria-label={t("Daftar angka")}
+          aria-pressed={format.orderedList}
+          className="size-11 [&_svg]:size-5"
+          onClick={() => handle?.toggleList("insertOrderedList")}
+          size="icon"
+          title={t("Daftar angka")}
+          type="button"
+          variant={format.orderedList ? "default" : "outline"}
+        >
+          <NumberedListIcon />
+        </Button>
+
+        <span className="mx-0.5 h-6 w-px bg-border" />
+
+        <Button
+          aria-label={t("Tautan")}
+          aria-pressed={linkOpen}
+          className="size-11 [&_svg]:size-5"
+          onClick={() => setLinkOpen((v) => !v)}
+          size="icon"
+          title={t("Tautan")}
+          type="button"
+          variant={linkOpen ? "default" : "outline"}
+        >
+          <LinkIcon />
+        </Button>
+      </div>
+
+      {linkOpen && (
+        <div className="flex items-center gap-2">
+          <Input
+            autoFocus
+            onChange={(e) => setLinkUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                applyLink();
+              }
+            }}
+            placeholder="https://…"
+            value={linkUrl}
+          />
+          <Button
+            aria-label={t("Sisipkan")}
+            className="size-10 shrink-0 [&_svg]:size-5"
+            disabled={!linkUrl.trim()}
+            onClick={applyLink}
+            onMouseDown={(event) => event.preventDefault()}
+            size="icon"
+            title={t("Sisipkan")}
+            type="button"
+            variant="outline"
+          >
+            <CheckIcon />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2540,6 +3046,240 @@ function ProjectDataPanel({
   );
 }
 
+function GallerySettingsOverlay({
+  block,
+  initialIndex,
+  onChange,
+  onClose,
+}: {
+  block: ProjectGalleryBlock;
+  initialIndex: number;
+  onChange: (patch: Partial<ProjectBlock>) => void;
+  onClose: () => void;
+}) {
+  const { t } = useLanguage();
+  const trackRef = useRef<HTMLDivElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [current, setCurrent] = useState(
+    Math.min(Math.max(initialIndex, 0), Math.max(block.images.length - 1, 0)),
+  );
+
+  useEffect(() => {
+    const safe = Math.min(Math.max(initialIndex, 0), Math.max(block.images.length - 1, 0));
+    setCurrent(safe);
+    const frame = requestAnimationFrame(() => {
+      const track = trackRef.current;
+      if (track) track.scrollTo({ left: safe * track.clientWidth, behavior: "instant" });
+    });
+    return () => cancelAnimationFrame(frame);
+    // Hanya saat overlay dibuka atau initialIndex berubah.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialIndex]);
+
+  const safeCurrent = Math.min(Math.max(current, 0), Math.max(block.images.length - 1, 0));
+  const activeImage = block.images[safeCurrent];
+
+  function goTo(target: number) {
+    const track = trackRef.current;
+    if (!track) return;
+    const next = Math.max(0, Math.min(block.images.length - 1, target));
+    setCurrent(next);
+    track.scrollTo({ left: next * track.clientWidth, behavior: "smooth" });
+  }
+
+  function handleReplaceFile(files: FileList | File[] | null) {
+    const file = files ? Array.from(files)[0] : undefined;
+    if (!file) return;
+    const validation = validateUpload(file);
+    if (!validation.ok) {
+      toastManager.add({
+        title: t("Gagal memilih {name}", { name: file.name }),
+        description: validation.message,
+        type: "error",
+      });
+      return;
+    }
+    if (!file.type.startsWith("image/")) return;
+    const url = URL.createObjectURL(file);
+    registerLocalFile(url, file);
+    const next = block.images.map((item, i) =>
+      i === safeCurrent ? { ...item, url } : item,
+    );
+    onChange({ images: next });
+  }
+
+  function handleDeleteCurrent() {
+    const next = block.images.filter((_, i) => i !== safeCurrent);
+    onChange({ images: next });
+    if (next.length === 0) {
+      onClose();
+      return;
+    }
+    const nextIndex = Math.min(safeCurrent, next.length - 1);
+    setCurrent(nextIndex);
+    requestAnimationFrame(() => {
+      const track = trackRef.current;
+      if (track) track.scrollTo({ left: nextIndex * track.clientWidth, behavior: "instant" });
+    });
+  }
+
+  const navButton =
+    "absolute top-1/2 z-10 hidden size-11 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white backdrop-blur-md transition-colors hover:bg-white/25 disabled:pointer-events-none disabled:opacity-0 md:grid";
+
+  return (
+    <Dialog onOpenChange={(open) => !open && onClose()} open>
+      <DialogPortal>
+        <DialogBackdrop
+          className="bg-black/80 backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]"
+          forceRender
+        />
+        <DialogPrimitive.Popup
+          aria-label={t("Pengaturan Galeri")}
+          className="fixed inset-0 z-50 flex flex-col outline-none transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0"
+          onKeyDown={(event) => {
+            const target = event.target as HTMLElement | null;
+            if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+            if (event.key === "ArrowLeft") goTo(safeCurrent - 1);
+            if (event.key === "ArrowRight") goTo(safeCurrent + 1);
+          }}
+        >
+          <div className="flex items-center justify-between px-4 py-3 text-white sm:px-6">
+            <span className="font-medium text-sm tabular-nums">
+              {safeCurrent + 1} / {block.images.length}
+            </span>
+            <DialogPrimitive.Close
+              aria-label={t("Tutup panel")}
+              className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/15 text-white backdrop-blur-md transition-colors hover:bg-white/25"
+            >
+              <XMarkIcon className="size-5" />
+            </DialogPrimitive.Close>
+          </div>
+
+          <div className="relative min-h-0 flex-1">
+            <div
+              className="flex size-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              onScroll={(event) => {
+                const track = event.currentTarget;
+                if (track.clientWidth > 0) {
+                  setCurrent(Math.round(track.scrollLeft / track.clientWidth));
+                }
+              }}
+              ref={trackRef}
+            >
+              {block.images.map((image, i) => (
+                <div
+                  className="flex size-full shrink-0 snap-center items-center justify-center px-4 py-2 sm:px-16"
+                  key={`${image.url}-${i}`}
+                >
+                  <img
+                    alt={image.caption ?? ""}
+                    className="max-h-full max-w-full rounded-xl object-contain"
+                    src={image.url}
+                  />
+                </div>
+              ))}
+            </div>
+
+            {block.images.length > 1 && (
+              <>
+                <button
+                  aria-label={t("Foto sebelumnya")}
+                  className={cn(navButton, "left-4")}
+                  disabled={safeCurrent === 0}
+                  onClick={() => goTo(safeCurrent - 1)}
+                  type="button"
+                >
+                  <ChevronLeftIcon className="size-5" />
+                </button>
+                <button
+                  aria-label={t("Foto berikutnya")}
+                  className={cn(navButton, "right-4")}
+                  disabled={safeCurrent === block.images.length - 1}
+                  onClick={() => goTo(safeCurrent + 1)}
+                  type="button"
+                >
+                  <ChevronRightIcon className="size-5" />
+                </button>
+              </>
+            )}
+          </div>
+
+          <div className="mx-auto w-full max-w-xl space-y-3 px-4 pt-2 pb-[calc(env(safe-area-inset-bottom,0px)_+_1rem)] sm:px-6">
+            {block.images.length > 1 && (
+              <div className="flex justify-center gap-1.5">
+                {block.images.map((image, i) => (
+                  <button
+                    aria-label={`${t("Foto")} ${i + 1}`}
+                    className={cn(
+                      "h-1.5 cursor-pointer rounded-full transition-all",
+                      i === safeCurrent ? "w-5 bg-white" : "w-1.5 bg-white/40",
+                    )}
+                    key={`${image.url}-${i}`}
+                    onClick={() => goTo(i)}
+                    type="button"
+                  />
+                ))}
+              </div>
+            )}
+
+            {activeImage && (
+              <div className="space-y-2.5 rounded-2xl border border-white/15 bg-background/95 p-3 shadow-lg backdrop-blur-md">
+                <Input
+                  aria-label={t("Keterangan")}
+                  onChange={(e) => {
+                    const next = block.images.map((item, i) =>
+                      i === safeCurrent ? { ...item, caption: e.target.value } : item,
+                    );
+                    onChange({ images: next });
+                  }}
+                  placeholder={t("Tulis keterangan…")}
+                  size="sm"
+                  value={activeImage.caption ?? ""}
+                />
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    className="w-full"
+                    onClick={() => replaceInputRef.current?.click()}
+                    size="sm"
+                    type="button"
+                    variant="outline"
+                  >
+                    <ArrowUpTrayIcon />
+                    {t("Ganti gambar")}
+                  </Button>
+                  <Button
+                    aria-label={t("Hapus gambar")}
+                    className="w-full"
+                    onClick={handleDeleteCurrent}
+                    size="sm"
+                    type="button"
+                    variant="destructive-outline"
+                  >
+                    <TrashIcon />
+                    {t("Hapus")}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <input
+            accept="image/png,image/jpeg,image/webp,image/gif"
+            className="hidden"
+            onChange={(event) => {
+              const files = event.target.files ? Array.from(event.target.files) : [];
+              event.target.value = "";
+              handleReplaceFile(files);
+            }}
+            ref={replaceInputRef}
+            type="file"
+          />
+        </DialogPrimitive.Popup>
+      </DialogPortal>
+    </Dialog>
+  );
+}
+
 function MediaBlockProperties({
   block,
   onChange,
@@ -2548,19 +3288,167 @@ function MediaBlockProperties({
   onChange: (patch: Partial<ProjectBlock>) => void;
 }) {
   const { t } = useLanguage();
+  const mediaInputRef = useRef<HTMLInputElement>(null);
+
   if (block.type !== "image" && block.type !== "video") return null;
+
+  const fit: ProjectBlockFit = block.fit ?? "fill";
+  const align: ProjectBlockAlign = block.align ?? "center";
+  const accept =
+    block.type === "image"
+      ? "image/png,image/jpeg,image/webp,image/gif"
+      : "video/mp4,video/webm,video/quicktime";
+
+  function handleMediaFile(files: FileList | File[] | null) {
+    const file = files ? Array.from(files)[0] : undefined;
+    if (!file) return;
+    const validation = validateUpload(file);
+    if (!validation.ok) {
+      toastManager.add({
+        title: t("Gagal memilih file"),
+        description: validation.message,
+        type: "error",
+      });
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    registerLocalFile(url, file);
+    onChange({ url });
+  }
+
   return (
-    <div className="space-y-4">
-      {block.type === "video" && (
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pb-4">
+        <Field className="flex-row items-center justify-between gap-3">
+          <FieldLabel>{t("Tampilan")}</FieldLabel>
+          <div
+            aria-label={t("Mode tampilan media")}
+            className={cn(segmentedControlRootClassName, "inline-grid grid-cols-2")}
+            data-base-ui-swipe-ignore
+            role="group"
+          >
+            {(
+              [
+                { value: "fill", label: t("Penuh"), Icon: ArrowsPointingOutIcon },
+                { value: "fit", label: t("Pas"), Icon: ArrowsPointingInIcon },
+              ] as const
+            ).map(({ value, label, Icon }) => (
+              <button
+                aria-label={label}
+                aria-pressed={fit === value}
+                className={cn(
+                  segmentedControlItemVariants({ size: "lg", state: "checked" }),
+                  "h-10 min-w-11 touch-manipulation justify-center px-3 sm:h-8 sm:min-w-9 sm:px-2.5",
+                )}
+                data-checked={fit === value ? "" : undefined}
+                key={value}
+                onClick={() => onChange({ fit: value })}
+                title={label}
+                type="button"
+              >
+                <Icon className="size-5 sm:size-4" />
+              </button>
+            ))}
+          </div>
+        </Field>
+
+        {fit === "fit" && (
+          <Field className="flex-row items-center justify-between gap-3">
+            <FieldLabel>{t("Posisi")}</FieldLabel>
+            <div
+              aria-label={t("Posisi")}
+              className={cn(segmentedControlRootClassName, "inline-grid grid-cols-3")}
+              data-base-ui-swipe-ignore
+              role="group"
+            >
+              {(
+                [
+                  { value: "left", label: t("Kiri"), Icon: Bars3BottomLeftIcon },
+                  { value: "center", label: t("Tengah"), Icon: Bars3Icon },
+                  { value: "right", label: t("Kanan"), Icon: Bars3BottomRightIcon },
+                ] as const
+              ).map(({ value, label, Icon }) => (
+                <button
+                  aria-label={label}
+                  aria-pressed={align === value}
+                  className={cn(
+                    segmentedControlItemVariants({ size: "lg", state: "checked" }),
+                    "h-10 min-w-11 touch-manipulation justify-center px-3 sm:h-8 sm:min-w-9 sm:px-2.5",
+                  )}
+                  data-checked={align === value ? "" : undefined}
+                  key={value}
+                  onClick={() => onChange({ align: value })}
+                  title={label}
+                  type="button"
+                >
+                  <Icon className="size-5 sm:size-4" />
+                </button>
+              ))}
+            </div>
+          </Field>
+        )}
+
         <Field>
-          <FieldLabel>URL</FieldLabel>
+          <FieldLabel>{t("Keterangan")}</FieldLabel>
           <Input
-            onChange={(e) => onChange({ url: e.target.value })}
-            placeholder={t("URL YouTube/Vimeo")}
-            value={block.url}
+            onChange={(e) => onChange({ caption: e.target.value })}
+            placeholder={t("Tulis keterangan…")}
+            value={block.caption ?? ""}
           />
         </Field>
-      )}
+
+        {block.type === "video" && (
+          <Field>
+            <FieldLabel>URL</FieldLabel>
+            <Input
+              onChange={(e) => onChange({ url: e.target.value })}
+              placeholder={t("URL YouTube/Vimeo")}
+              value={block.url}
+            />
+          </Field>
+        )}
+      </div>
+
+      <div className={cn("grid shrink-0 gap-2 border-t pt-3", block.url ? "grid-cols-2" : "grid-cols-1")}>
+        <Button
+          className="w-full"
+          onClick={() => mediaInputRef.current?.click()}
+          size="sm"
+          type="button"
+          variant="outline"
+        >
+          <ArrowUpTrayIcon />
+          {block.url
+            ? t("Ganti media")
+            : block.type === "image"
+              ? t("Unggah gambar")
+              : t("Unggah video")}
+        </Button>
+        {block.url && (
+          <Button
+            aria-label={t("Hapus media")}
+            className="w-full"
+            onClick={() => onChange({ url: "" })}
+            size="sm"
+            type="button"
+            variant="destructive-outline"
+          >
+            <TrashIcon />
+            {t("Hapus")}
+          </Button>
+        )}
+        <input
+          accept={accept}
+          className="hidden"
+          onChange={(event) => {
+            const files = event.target.files ? Array.from(event.target.files) : [];
+            event.target.value = "";
+            handleMediaFile(files);
+          }}
+          ref={mediaInputRef}
+          type="file"
+        />
+      </div>
     </div>
   );
 }
@@ -2572,8 +3460,6 @@ function BlockMediaField({
   onChange,
   autoOpen,
   onAutoOpenDone,
-  onFitChange,
-  onOpenSettings,
 }: {
   kind: "image" | "video";
   value: string;
@@ -2581,8 +3467,6 @@ function BlockMediaField({
   onChange: (url: string) => void;
   autoOpen?: boolean;
   onAutoOpenDone?: () => void;
-  onFitChange?: (fit: ProjectBlockFit) => void;
-  onOpenSettings?: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [dragging, setDragging] = useState(false);
@@ -2644,8 +3528,8 @@ function BlockMediaField({
             className={cn(
               "rounded-lg border",
               fit === "fit"
-                ? "block h-auto max-h-64 w-auto max-w-96 object-contain"
-                : "h-auto w-full object-cover",
+                ? "block h-auto max-h-64 w-auto max-w-full object-contain"
+                : "aspect-video w-full object-cover",
             )}
             src={value}
           />
@@ -2659,82 +3543,13 @@ function BlockMediaField({
         ) : (
           <video
             className={cn(
-              "aspect-video w-full rounded-lg border",
+              "aspect-video w-full rounded-lg border bg-black",
               fitClass(fit),
-              fit === "fit" && "p-6",
             )}
             controls
             src={value}
           />
         )}
-        <div className="absolute end-2 top-2 flex items-center gap-1">
-          <button
-            aria-label={t("Ganti media")}
-            className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md bg-background text-muted-foreground shadow-xs outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6"
-            onClick={() => inputRef.current?.click()}
-            title={t("Ganti media")}
-            type="button"
-          >
-            <ArrowUpTrayIcon className="size-4" />
-          </button>
-          {onOpenSettings && (
-            <button
-              aria-label={t("Pengaturan media")}
-              className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-md bg-background text-muted-foreground shadow-xs outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6"
-              onClick={onOpenSettings}
-              title={t("Pengaturan media")}
-              type="button"
-            >
-              <Cog6ToothIcon className="size-4" />
-            </button>
-          )}
-          <div
-            aria-label={t("Mode tampilan media")}
-            className="flex items-center gap-0.5 rounded-md bg-background p-0.5 shadow-xs"
-            role="group"
-          >
-            <button
-              aria-label={t("Pas — tampilkan seluruh media")}
-              aria-pressed={(fit ?? "fill") === "fit"}
-              className={cn(
-                "grid size-7 shrink-0 cursor-pointer place-items-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6",
-                (fit ?? "fill") === "fit"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              onClick={() => onFitChange?.("fit")}
-              title={t("Pas")}
-              type="button"
-            >
-              <ArrowsPointingInIcon className="size-4" />
-            </button>
-            <button
-              aria-label={t("Penuh — isi seluruh area media")}
-              aria-pressed={(fit ?? "fill") === "fill"}
-              className={cn(
-                "grid size-7 shrink-0 cursor-pointer place-items-center rounded-md outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background sm:size-6",
-                (fit ?? "fill") === "fill"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              onClick={() => onFitChange?.("fill")}
-              title={t("Penuh")}
-              type="button"
-            >
-              <ArrowsPointingOutIcon className="size-4" />
-            </button>
-          </div>
-          <Button
-            aria-label={t("Hapus media")}
-            onClick={() => onChange("")}
-            size="icon-xs"
-            type="button"
-            variant="destructive"
-          >
-            <TrashIcon />
-          </Button>
-        </div>
-        {picker}
       </div>
     );
   }

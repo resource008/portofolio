@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { CalendarDateRangeIcon, RectangleStackIcon } from "@heroicons/react/24/outline";
 import type { Project, ProjectMedia } from "@portofolio/shared";
+import { translatePeriod, useAutoTranslate } from "@/lib/auto-translate";
+import { useLanguage } from "@/lib/language";
 import { resolveTechLogo } from "@/lib/tech-logo";
 import { Badge } from "@/components/ui/badge";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
@@ -55,6 +57,9 @@ export function ProjectCard({
   project: Project;
   onOpen?: (project: Project) => void;
 }) {
+  const { language } = useLanguage();
+  const tr = useAutoTranslate([project.title, project.category, project.excerpt]);
+
   return (
     <Link
       className="group flex flex-col overflow-hidden rounded-2xl border border-border/60 bg-card transition-shadow hover:shadow-md"
@@ -71,13 +76,13 @@ export function ProjectCard({
           <div className="absolute inset-x-2 top-2 z-10 flex flex-wrap items-center gap-1.5">
             {project.category ? (
               <Badge className="bg-background/85 px-2 text-foreground backdrop-blur-sm" size="lg" variant="secondary">
-                {project.category}
+                {tr(project.category)}
               </Badge>
             ) : null}
             {project.date_range ? (
               <Badge className="gap-1 bg-background/85 px-2 text-foreground tabular-nums backdrop-blur-sm" size="lg" variant="secondary">
                 <CalendarDateRangeIcon className="size-4" />
-                {project.date_range}
+                {translatePeriod(project.date_range, language)}
               </Badge>
             ) : null}
           </div>
@@ -98,10 +103,10 @@ export function ProjectCard({
 
       <div className="flex flex-1 flex-col p-4">
         <h3 className="line-clamp-2 font-semibold text-foreground group-hover:text-primary">
-          {project.title}
+          {tr(project.title)}
         </h3>
         {project.excerpt ? (
-          <p className="mt-1.5 line-clamp-2 text-muted-foreground text-sm">{project.excerpt}</p>
+          <p className="mt-1.5 line-clamp-2 text-muted-foreground text-sm">{tr(project.excerpt)}</p>
         ) : null}
       </div>
     </Link>

@@ -14,6 +14,7 @@ import { profileRoutes } from "./routes/profile";
 import { projectRoutes } from "./routes/projects";
 import { socialLinkRoutes } from "./routes/social-links";
 import { techStackRoutes } from "./routes/tech-stack";
+import { translateRoutes } from "./routes/translate";
 import { uploadRoutes } from "./routes/uploads";
 
 const app = new Hono();
@@ -40,6 +41,7 @@ app.route("/api", analyticsRoutes);
 app.route("/api", dashboardRoutes);
 app.route("/api", notificationRoutes);
 app.route("/api", techStackRoutes);
+app.route("/api", translateRoutes);
 app.route("/api", uploadRoutes);
 
 app.on(["GET", "POST"], "/api/auth/*", (c) => auth.handler(c.req.raw));

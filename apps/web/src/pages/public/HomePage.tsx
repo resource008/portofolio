@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useLanguage } from "@/lib/language";
 import { HeroSection, HeroTechBar } from "@/components/public/HeroSection";
 import { EducationSection } from "@/components/public/EducationSection";
 import { ExperienceSection } from "@/components/public/ExperienceSection";
@@ -8,6 +9,7 @@ import { SocialDock } from "@/components/public/SocialDock";
 import { PublicHeader } from "@/components/public/PublicHeader";
 
 export default function HomePage() {
+  const { t } = useLanguage();
   const { hash, state, pathname } = useLocation();
   const navigate = useNavigate();
   const scrollTo = (state as { scrollTo?: string } | null)?.scrollTo;
@@ -43,7 +45,7 @@ export default function HomePage() {
         <ContactSection />
       </main>
       <footer className="px-4 pt-8 pb-28 text-center text-muted-foreground text-xs sm:px-6">
-        Ilustrasi oleh{" "}
+        {t("Ilustrasi oleh")}{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://iconscout.com/contributors/triple-t" rel="noopener noreferrer" target="_blank">
           Charcoal 3D
         </a>
@@ -51,7 +53,7 @@ export default function HomePage() {
         <a className="underline underline-offset-2 hover:text-foreground" href="https://iconscout.com/contributors/dominika-fasciszewska" rel="noopener noreferrer" target="_blank">
           Dominika Faściszewska
         </a>{" "}
-        via IconScout dan{" "}
+        via IconScout {t("dan")}{" "}
         <a className="underline underline-offset-2 hover:text-foreground" href="https://3dicons.co" rel="noopener noreferrer" target="_blank">
           3dicons
         </a>

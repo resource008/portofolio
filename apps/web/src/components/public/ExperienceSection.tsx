@@ -4,30 +4,45 @@ import { useQuery } from "@tanstack/react-query";
 import { BriefcaseIcon } from "@heroicons/react/24/outline";
 import type { Experience, ExperienceContent } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
+import { translatePeriod, useAutoTranslate } from "@/lib/auto-translate";
+import { useLanguage } from "@/lib/language";
 import { resolveTechLogo } from "@/lib/tech-logo";
 import { cn } from "@/lib/utils";
 import { ScrollTimeline } from "@/components/public/ScrollTimeline";
 import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 import { PhotoLightbox } from "@/components/public/PhotoLightbox";
+import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import giraffeLaptop from "@/assets/illustrations/giraffe-laptop.webp";
 
 function SkillPill({ name }: { name: string }) {
   const logo = resolveTechLogo(name);
   const [failed, setFailed] = useState(false);
 
+  if (logo && !failed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg border border-border/60 bg-white shadow-xs" />
+          }
+        >
+          <img
+            alt={name}
+            className="size-5 object-contain"
+            decoding="async"
+            loading="lazy"
+            onError={() => setFailed(true)}
+            src={logo}
+          />
+        </TooltipTrigger>
+        <TooltipPopup>{name}</TooltipPopup>
+      </Tooltip>
+    );
+  }
+
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-foreground/80 text-xs">
-      {logo && !failed ? (
-        <img
-          alt=""
-          className="size-3.5 object-contain"
-          decoding="async"
-          loading="lazy"
-          onError={() => setFailed(true)}
-          src={logo}
-        />
-      ) : null}
+    <span className="inline-flex h-8 items-center rounded-lg border border-border/60 px-2.5 text-foreground/80 text-xs">
       {name}
     </span>
   );
@@ -39,12 +54,14 @@ const DRAG_THRESHOLD = 6;
 const PULL_OUT_DISTANCE = 120;
 
 function DraggablePhoto({
+  buttonRef,
   className,
   hidden,
   index,
   onOpen,
   photo,
 }: {
+  buttonRef?: (el: HTMLButtonElement | null) => void;
   className?: string;
   hidden: boolean;
   index: number;
@@ -118,6 +135,7 @@ function DraggablePhoto({
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={endDrag}
+      ref={buttonRef}
       style={style}
       type="button"
     >
@@ -133,11 +151,13 @@ function DraggablePhoto({
   );
 }
 
-function ExperienceRow({ item }: { item: Experience }) {
+function ExperienceRow({ item, tr }: { item: Experience; tr: (text?: string | null) => string }) {
   const photos = item.photos.slice(0, PHOTO_TILTS.length);
   const hasPhotos = photos.length > 0;
   const [viewing, setViewing] = useState<number | null>(null);
+  const [activeViewing, setActiveViewing] = useState<number | null>(null);
   const [originRect, setOriginRect] = useState<DOMRect | null>(null);
+  const photoRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   return (
     <article>
@@ -160,13 +180,17 @@ function ExperienceRow({ item }: { item: Experience }) {
           <div className="absolute inset-x-0 top-0 flex h-32 justify-center">
             {photos.map((photo, index) => (
               <DraggablePhoto
+                buttonRef={(el) => {
+                  photoRefs.current[index] = el;
+                }}
                 className={PHOTO_TILTS[photos.length === 1 ? 1 : index]}
-                hidden={viewing === index}
+                hidden={activeViewing === index}
                 index={index}
                 key={photo}
                 onOpen={(rect) => {
                   setOriginRect(rect);
                   setViewing(index);
+                  setActiveViewing(index);
                 }}
                 photo={photo}
               />
@@ -184,30 +208,37 @@ function ExperienceRow({ item }: { item: Experience }) {
               />
             </div>
             <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-base leading-snug sm:text-lg">{item.position}</h3>
+              <h3 className="font-semibold text-base leading-snug sm:text-lg">{tr(item.position)}</h3>
               <p className="text-muted-foreground text-sm">{item.company_name}</p>
             </div>
           </div>
 
           {item.description ? (
             <p className="whitespace-pre-line text-justify text-muted-foreground text-sm leading-relaxed">
-              {item.description}
+              {tr(item.description)}
             </p>
           ) : null}
 
           {item.skills.length > 0 ? (
-            <div className="flex flex-wrap gap-1.5">
-              {item.skills.map((skill) => (
-                <SkillPill key={skill} name={skill} />
-              ))}
-            </div>
+            <TooltipProvider>
+              <div className="flex flex-wrap gap-1.5">
+                {item.skills.map((skill) => (
+                  <SkillPill key={skill} name={skill} />
+                ))}
+              </div>
+            </TooltipProvider>
           ) : null}
         </div>
       </div>
 
       <PhotoLightbox
+        getOriginRect={(i) => photoRefs.current[i]?.getBoundingClientRect() ?? null}
         index={viewing}
-        onClose={() => setViewing(null)}
+        onClose={() => {
+          setViewing(null);
+          setActiveViewing(null);
+        }}
+        onIndexChange={setActiveViewing}
         originRect={originRect}
         photos={item.photos}
       />
@@ -216,6 +247,7 @@ function ExperienceRow({ item }: { item: Experience }) {
 }
 
 export function ExperienceSection() {
+  const { language, t } = useLanguage();
   const revealRef = useRef<HTMLDivElement>(null);
   useRevealOnScroll(revealRef);
   const { data, isLoading } = useQuery({
@@ -225,10 +257,15 @@ export function ExperienceSection() {
 
   const header = data?.section_header;
   const items = data?.items ?? [];
-  const title = header?.title || "Pengalaman";
-  const description =
-    header?.description ||
-    "Pengalaman profesional, magang, dan kepemimpinan organisasi dalam membangun produk digital yang berdampak nyata.";
+  const tr = useAutoTranslate([
+    header?.title,
+    header?.description,
+    ...items.flatMap((item) => [item.position, item.description]),
+  ]);
+  const title = header?.title ? tr(header.title) : t("Pengalaman");
+  const description = header?.description
+    ? tr(header.description)
+    : t("Pengalaman profesional, magang, dan kepemimpinan organisasi dalam membangun produk digital yang berdampak nyata.");
 
   const isEmpty = items.length === 0;
 
@@ -278,8 +315,10 @@ export function ExperienceSection() {
                 className="py-16 md:py-28"
                 getKey={(item) => item.id}
                 items={items}
-                renderItem={(item) => <ExperienceRow item={item} />}
-                renderLabel={(item) => `${item.range_date}${item.is_current ? " - Saat Ini" : ""}`}
+                renderItem={(item) => <ExperienceRow item={item} tr={tr} />}
+                renderLabel={(item) =>
+                  `${translatePeriod(item.range_date, language)}${item.is_current ? ` - ${t("Saat Ini")}` : ""}`
+                }
               />
             </div>
           </div>

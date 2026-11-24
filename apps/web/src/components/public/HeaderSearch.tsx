@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import { MagnifyingGlassIcon, PhotoIcon, XMarkIcon } from "@heroicons/react/24/outline";
 import type { Project } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
+import { useLanguage } from "@/lib/language";
 import { matchesProject } from "@/lib/project-search";
 import { cn } from "@/lib/utils";
 import { Dialog, DialogBackdrop, DialogPortal } from "@/components/ui/dialog";
@@ -24,6 +25,7 @@ function ResultThumb({ project }: { project: Project }) {
 }
 
 export function HeaderSearch() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -81,7 +83,7 @@ export function HeaderSearch() {
   return (
     <>
       <button
-        aria-label="Cari proyek"
+        aria-label={t("Cari proyek")}
         className="grid size-9 place-items-center rounded-full border border-border bg-background/50 text-foreground/80 backdrop-blur-md transition-colors hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
         onClick={() => setOpen(true)}
         type="button"
@@ -99,25 +101,25 @@ export function HeaderSearch() {
         <DialogPortal>
           <DialogBackdrop />
           <DialogPrimitive.Popup
-            aria-label="Cari proyek"
+            aria-label={t("Cari proyek")}
             className="fixed inset-x-3 top-4 z-50 mx-auto flex max-h-[min(36rem,calc(100svh-2rem))] max-w-xl flex-col overflow-hidden rounded-2xl border bg-popover text-popover-foreground shadow-2xl outline-none transition-[opacity,translate,scale] duration-200 ease-out data-ending-style:-translate-y-2 data-ending-style:scale-[0.98] data-ending-style:opacity-0 data-starting-style:-translate-y-2 data-starting-style:scale-[0.98] data-starting-style:opacity-0 sm:top-[12svh]"
           >
             <div className={cn("flex items-center gap-2 px-4", hasQuery && "border-b")}>
               <MagnifyingGlassIcon className="size-5 shrink-0 text-muted-foreground" />
               <input
-                aria-label="Kata kunci"
+                aria-label={t("Kata kunci")}
                 autoFocus
                 className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={onInputKeyDown}
-                placeholder="Cari judul, kategori, atau teknologi…"
+                placeholder={t("Cari judul, kategori, atau teknologi…")}
                 // type="text" (bukan "search") agar tombol × bawaan browser tidak bertumpuk dengan tombol tutup.
                 enterKeyHint="search"
                 type="text"
                 value={query}
               />
               <DialogPrimitive.Close
-                aria-label="Tutup"
+                aria-label={t("Tutup")}
                 className="grid size-8 shrink-0 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <XMarkIcon className="size-5" />
@@ -158,7 +160,7 @@ export function HeaderSearch() {
                   </ul>
                 ) : (
                   <p className="py-10 text-center text-muted-foreground text-sm">
-                    Tidak ada proyek yang cocok dengan "{query}".
+                    {t('Tidak ada proyek yang cocok dengan "{query}".', { query })}
                   </p>
                 )}
               </div>

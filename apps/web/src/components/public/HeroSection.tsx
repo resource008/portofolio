@@ -21,6 +21,8 @@ import type {
 } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
 import { announcementMeta } from "@/lib/announcements";
+import { useAutoTranslate } from "@/lib/auto-translate";
+import { useLanguage } from "@/lib/language";
 import { resolveTechLogo } from "@/lib/tech-logo";
 import { resolveTheme, useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";
@@ -194,8 +196,10 @@ function TickerMessage({
   onMeasure: (width: number) => void;
   onOpenProject: (project: Project) => void;
 }) {
+  const { t } = useLanguage();
+  const tr = useAutoTranslate([item.text]);
   const Icon = item.icon;
-  const message = item.text;
+  const message = tr(item.text);
   const readDuration = Math.min(30, Math.max(4, message.length / 10));
 
   const textRef = useRef<HTMLElement | null>(null);
@@ -305,7 +309,7 @@ function TickerMessage({
                 >
                   {message}
                 </TooltipTrigger>
-                <TooltipPopup>Lihat postingan</TooltipPopup>
+                <TooltipPopup>{t("Lihat postingan")}</TooltipPopup>
               </Tooltip>
             </TooltipProvider>
           ) : (
@@ -523,6 +527,7 @@ function ScrollMouse() {
 }
 
 export function HeroSection() {
+  const { t } = useLanguage();
   const { data: profile, isError: profileError } = useQuery({
     queryKey: ["profile"],
     queryFn: () => apiGet<HeroProfile>("/profile"),
@@ -545,15 +550,23 @@ export function HeroSection() {
 
   const settled = Boolean(profile) || profileError;
   const template = settled && !profile?.subheading && !profile?.heading && !profile?.description;
-  const name = profile?.subheading || (template ? "Nama Kamu" : "");
-  const heading = profile?.heading || (template ? "Halo, saya" : "");
-  const description =
-    profile?.description ||
-    (template
-      ? "Tulis perkenalan singkat tentang dirimu, keahlian, dan apa yang sedang kamu kerjakan di panel admin."
-      : "");
+  const tr = useAutoTranslate([
+    profile?.heading,
+    profile?.description,
+    ...(profile?.highlight_skills ?? []).map((s) => s.name),
+  ]);
+  const name = profile?.subheading || (template ? t("Nama Kamu") : "");
+  const heading = profile?.heading ? tr(profile.heading) : template ? t("Halo, saya") : "";
+  const description = profile?.description
+    ? tr(profile.description)
+    : template
+      ? t("Tulis perkenalan singkat tentang dirimu, keahlian, dan apa yang sedang kamu kerjakan di panel admin.")
+      : "";
 
-  const savedRoles = (profile?.highlight_skills ?? []).slice(0, 5);
+  const savedRoles = (profile?.highlight_skills ?? []).slice(0, 5).map((s) => ({
+    ...s,
+    name: tr(s.name),
+  }));
   const roles =
     savedRoles.length > 0 || !template
       ? savedRoles
@@ -637,7 +650,7 @@ export function HeroSection() {
               <div>
                 <ProfileCard
                   avatarUrl={profile?.photo_url ?? ""}
-                  contactText={profile?.cv_file_url ? "Lihat CV" : ""}
+                  contactText={profile?.cv_file_url ? t("Lihat CV") : ""}
                   handle=""
                   miniAvatarUrl={profile?.logo_url ?? undefined}
                   name={name}
@@ -667,7 +680,7 @@ export function HeroSection() {
         >
           <div className="flex flex-col items-center gap-1.5" data-hero="hint">
             <ScrollMouse />
-            <span className="text-xs">Gulir untuk melihat detail</span>
+            <span className="text-xs">{t("Gulir untuk melihat detail")}</span>
           </div>
         </motion.div>
       </div>
