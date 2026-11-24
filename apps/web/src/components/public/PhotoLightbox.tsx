@@ -9,6 +9,8 @@ interface PhotoLightboxProps {
   captions?: (string | null)[];
   index: number | null;
   originRect?: DOMRect | null;
+  getOriginRect?: (index: number) => DOMRect | null;
+  onIndexChange?: (index: number) => void;
   onClose: () => void;
 }
 
@@ -23,16 +25,26 @@ function flipTransform(from: DOMRect, to: DOMRect) {
 
 const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-export function PhotoLightbox({ photos, captions, index, originRect, onClose }: PhotoLightboxProps) {
+export function PhotoLightbox({
+  photos,
+  captions,
+  index,
+  originRect,
+  getOriginRect,
+  onIndexChange,
+  onClose,
+}: PhotoLightboxProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const imageRefs = useRef<(HTMLImageElement | null)[]>([]);
   const closingRef = useRef(false);
+  const [closing, setClosing] = useState(false);
   const [current, setCurrent] = useState(0);
   const open = index !== null;
 
   useEffect(() => {
     if (index === null) return;
     setCurrent(index);
+    setClosing(false);
     const frame = requestAnimationFrame(() => {
       const track = trackRef.current;
       if (track) track.scrollTo({ left: index * track.clientWidth, behavior: "instant" });
@@ -44,11 +56,12 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
 
   const zoomFromOrigin = (target: number) => {
     const img = imageRefs.current[target];
-    if (!img || !originRect || reducedMotion()) return;
+    const fromRect = getOriginRect?.(target) ?? originRect;
+    if (!img || !fromRect || reducedMotion()) return;
     const run = () => {
       img.animate(
         [
-          { transform: flipTransform(originRect, img.getBoundingClientRect()), borderRadius: "12px" },
+          { transform: flipTransform(fromRect, img.getBoundingClientRect()), borderRadius: "12px" },
           { transform: "none" },
         ],
         { duration: 450, easing: ZOOM_EASING },
@@ -62,11 +75,24 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
     if (closingRef.current) return;
     closingRef.current = true;
     const img = imageRefs.current[current];
-    if (img && originRect && current === index && !reducedMotion()) {
-      img.animate(
-        [{ transform: "none" }, { transform: flipTransform(originRect, img.getBoundingClientRect()) }],
-        { duration: 300, easing: ZOOM_EASING, fill: "forwards" },
+    const targetRect = getOriginRect?.(current) ?? (current === index ? originRect : null);
+    if (img && targetRect && !reducedMotion()) {
+      setClosing(true);
+      const anim = img.animate(
+        [
+          { transform: "none", borderRadius: "8px" },
+          {
+            transform: flipTransform(targetRect, img.getBoundingClientRect()),
+            borderRadius: "12px",
+          },
+        ],
+        { duration: 320, easing: ZOOM_EASING, fill: "forwards" },
       );
+      anim.finished.finally(() => {
+        setClosing(false);
+        onClose();
+      });
+      return;
     }
     onClose();
   };
@@ -90,22 +116,35 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
     <Dialog onOpenChange={(next) => !next && handleClose()} open={open}>
       <DialogPortal>
         {/* Prefix -webkit- untuk Safari iOS lama. */}
-        <DialogBackdrop className="bg-black/60 backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]" />
+        <DialogBackdrop
+          className={cn(
+            "bg-black/60 backdrop-blur-xl transition-opacity duration-300 [-webkit-backdrop-filter:blur(24px)]",
+            closing && "opacity-0",
+          )}
+          forceRender
+        />
         <DialogPrimitive.Popup
           aria-label="Foto pengalaman"
           className="fixed inset-0 z-50 flex flex-col outline-none transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0"
           onKeyDown={onKeyDown}
         >
-          <div className="flex items-center justify-between px-4 py-3 text-white sm:px-6">
+          <div
+            className={cn(
+              "flex items-center justify-between px-4 py-3 text-white transition-opacity duration-200 sm:px-6",
+              closing && "opacity-0",
+            )}
+          >
             <span className="text-sm tabular-nums">
               {current + 1} / {photos.length}
             </span>
-            <DialogPrimitive.Close
+            <button
               aria-label="Tutup"
-              className="grid size-10 place-items-center rounded-full bg-white/15 backdrop-blur-md transition-colors hover:bg-white/25"
+              className="grid size-10 cursor-pointer place-items-center rounded-full bg-white/15 backdrop-blur-md transition-colors hover:bg-white/25"
+              onClick={handleClose}
+              type="button"
             >
               <XMarkIcon className="size-5" />
-            </DialogPrimitive.Close>
+            </button>
           </div>
 
           <div className="relative min-h-0 flex-1">
@@ -113,7 +152,11 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
               className="flex size-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
               onScroll={(event) => {
                 const track = event.currentTarget;
-                setCurrent(Math.round(track.scrollLeft / track.clientWidth));
+                if (track.clientWidth > 0) {
+                  const next = Math.round(track.scrollLeft / track.clientWidth);
+                  setCurrent(next);
+                  onIndexChange?.(next);
+                }
               }}
               ref={trackRef}
             >
@@ -135,7 +178,14 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
                     />
                   </div>
                   {captions?.[i] ? (
-                    <p className="max-w-xl text-center text-sm text-white/80">{captions[i]}</p>
+                    <p
+                      className={cn(
+                        "max-w-xl text-center text-sm text-white/80 transition-opacity duration-200",
+                        closing && "opacity-0",
+                      )}
+                    >
+                      {captions[i]}
+                    </p>
                   ) : null}
                 </div>
               ))}
@@ -143,7 +193,7 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
 
             <button
               aria-label="Foto sebelumnya"
-              className={cn(navButton, "left-4")}
+              className={cn(navButton, "left-4", closing && "opacity-0")}
               disabled={current === 0}
               onClick={() => goTo(current - 1)}
               type="button"
@@ -152,7 +202,7 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
             </button>
             <button
               aria-label="Foto berikutnya"
-              className={cn(navButton, "right-4")}
+              className={cn(navButton, "right-4", closing && "opacity-0")}
               disabled={current === photos.length - 1}
               onClick={() => goTo(current + 1)}
               type="button"
@@ -162,7 +212,12 @@ export function PhotoLightbox({ photos, captions, index, originRect, onClose }: 
           </div>
 
           {photos.length > 1 ? (
-            <div className="flex justify-center gap-1.5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)]">
+            <div
+              className={cn(
+                "flex justify-center gap-1.5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] transition-opacity duration-200",
+                closing && "opacity-0",
+              )}
+            >
               {photos.map((photo, i) => (
                 <button
                   aria-label={`Foto ${i + 1}`}

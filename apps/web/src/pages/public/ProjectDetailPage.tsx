@@ -2,13 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { CalendarDateRangeIcon, GlobeAltIcon, LinkIcon, RectangleStackIcon, TagIcon } from "@heroicons/react/24/outline";
 import type { ProjectBlock, ProjectBlockAlign, ProjectDetail, ProjectGalleryItem } from "@portofolio/shared";
 import { safeHref, sanitizeHtml } from "@/lib/sanitize";
+import { translatePeriod, useAutoTranslate } from "@/lib/auto-translate";
+import { useLanguage } from "@/lib/language";
 import { resolveTechLogo } from "@/lib/tech-logo";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipPopup, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 import { PhotoLightbox } from "@/components/public/PhotoLightbox";
-import { glassPillClass, ProjectActions } from "@/components/public/ProjectActions";
+import { glassPillClass } from "@/components/public/ProjectActions";
 
 function mediaAlignClass(align?: ProjectBlockAlign | null): string {
   if (align === "left") return "me-auto ms-0";
@@ -62,7 +64,15 @@ function TechPill({ name, logoOnly = false }: { name: string; logoOnly?: boolean
   );
 }
 
-function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: boolean }) {
+function GalleryBlock({
+  images,
+  bleed,
+  tr,
+}: {
+  images: ProjectGalleryItem[];
+  bleed: boolean;
+  tr: (text?: string | null) => string;
+}) {
   const [viewing, setViewing] = useState<number | null>(null);
 
   if (images.length === 0) return null;
@@ -84,7 +94,7 @@ function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: 
               type="button"
             >
               <img
-                alt={image.caption ?? ""}
+                alt={tr(image.caption)}
                 className="h-56 w-auto max-w-[80vw] object-contain transition-transform duration-300 group-hover:scale-105 sm:h-72"
                 decoding="async"
                 loading="lazy"
@@ -93,7 +103,7 @@ function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: 
             </button>
             {image.caption ? (
               <figcaption className="mt-1.5 max-w-64 text-muted-foreground text-xs">
-                {image.caption}
+                {tr(image.caption)}
               </figcaption>
             ) : null}
           </figure>
@@ -101,7 +111,7 @@ function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: 
       </div>
 
       <PhotoLightbox
-        captions={images.map((image) => image.caption ?? null)}
+        captions={images.map((image) => (image.caption ? tr(image.caption) : null))}
         index={viewing}
         onClose={() => setViewing(null)}
         photos={images.map((image) => image.url)}
@@ -110,55 +120,71 @@ function GalleryBlock({ images, bleed }: { images: ProjectGalleryItem[]; bleed: 
   );
 }
 
-function ContentBlock({ block, bleed = false }: { block: ProjectBlock; bleed?: boolean }) {
+function ContentBlock({
+  block,
+  bleed = false,
+  tr,
+}: {
+  block: ProjectBlock;
+  bleed?: boolean;
+  tr: (text?: string | null) => string;
+}) {
   switch (block.type) {
     case "heading": {
       // Blok isTitle sudah dirender sebagai h1 di atas.
       if (block.isTitle) return null;
       return (
         <div
-          className="space-y-3 [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-medium [&_h3]:text-xl [&_h3]:font-semibold [&_p]:leading-relaxed [&_p]:text-muted-foreground [&_strong]:font-semibold [&_strong]:text-foreground [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:space-y-1 [&_ul,&_ol]:ps-5 [&_a]:font-medium [&_a]:text-primary [&_a]:underline"
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.text) }}
+          className="space-y-3 break-words font-bold text-3xl tracking-tight [overflow-wrap:anywhere] [&_h1]:text-3xl [&_h1]:font-bold [&_h2]:text-base [&_h2]:font-medium [&_h3]:text-xl [&_h3]:font-semibold [&_p]:leading-relaxed [&_p]:text-muted-foreground [&_strong]:font-semibold [&_strong]:text-foreground [&_em]:italic [&_ul]:list-disc [&_ol]:list-decimal [&_ul,&_ol]:space-y-1 [&_ul,&_ol]:ps-5 [&_a]:font-medium [&_a]:text-primary [&_a]:underline"
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(tr(block.text)) }}
         />
       );
     }
     case "image":
       return (
-        <figure className={cn(bleed ? "-mx-6" : [block.fit === "fit" && "w-fit max-w-full", mediaAlignClass(block.align)])}>
+        <figure
+          className={cn(
+            block.fit === "fit" ? ["w-fit max-w-[65%]", mediaAlignClass(block.align)] : "w-full",
+          )}
+        >
           <img
-            alt={block.caption ?? ""}
+            alt={tr(block.caption)}
             className={cn(
-              "w-full",
-              bleed ? "border-y border-border/50" : "rounded-2xl border border-border/50",
-              block.fit === "fit" ? "max-h-[70vh] object-contain" : "aspect-video object-cover",
+              "rounded-2xl border border-border/50",
+              block.fit === "fit"
+                ? "block max-h-[70vh] w-auto max-w-full object-contain"
+                : "aspect-video w-full object-cover",
             )}
             decoding="async"
             loading="lazy"
             src={block.url}
           />
           {block.caption ? (
-            <figcaption className={cn("mt-2 text-center text-sm text-muted-foreground", bleed && "px-6")}>
-              {block.caption}
+            <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+              {tr(block.caption)}
             </figcaption>
           ) : null}
         </figure>
       );
     case "video":
       return (
-        <figure className={cn(bleed ? "-mx-6" : [block.fit === "fit" && "w-fit max-w-full", mediaAlignClass(block.align)])}>
+        <figure
+          className={cn(
+            block.fit === "fit" ? ["w-[65%]", mediaAlignClass(block.align)] : "w-full",
+          )}
+        >
           <video
             className={cn(
-              "w-full bg-black",
-              bleed ? "border-y border-border/50" : "rounded-2xl border border-border/50",
-              block.fit === "fit" ? "max-h-[70vh] object-contain" : "aspect-video object-cover",
+              "aspect-video w-full rounded-2xl border border-border/50 bg-black",
+              block.fit === "fit" ? "object-contain" : "object-cover",
             )}
             controls
             preload="metadata"
             src={block.url}
           />
           {block.caption ? (
-            <figcaption className={cn("mt-2 text-center text-sm text-muted-foreground", bleed && "px-6")}>
-              {block.caption}
+            <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+              {tr(block.caption)}
             </figcaption>
           ) : null}
         </figure>
@@ -175,7 +201,9 @@ function ContentBlock({ block, bleed = false }: { block: ProjectBlock; bleed?: b
             <LinkIcon className="size-4" />
           </span>
           <span className="min-w-0">
-            <span className="block truncate font-medium text-sm">{block.label || block.url}</span>
+            <span className="block truncate font-medium text-sm">
+              {block.label ? tr(block.label) : block.url}
+            </span>
             <span className="block max-w-full truncate text-muted-foreground text-xs">
               {block.url}
             </span>
@@ -190,11 +218,11 @@ function ContentBlock({ block, bleed = false }: { block: ProjectBlock; bleed?: b
             block.align === "center" && "text-center",
             block.align === "right" && "text-end",
           )}
-          dangerouslySetInnerHTML={{ __html: sanitizeHtml(block.text) }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(tr(block.text)) }}
         />
       );
     case "gallery":
-      return <GalleryBlock bleed={bleed} images={block.images} />;
+      return <GalleryBlock bleed={bleed} images={block.images} tr={tr} />;
   }
 }
 
@@ -281,7 +309,17 @@ function TechStackRow({ stacks, logoOnly }: { stacks: string[]; logoOnly: boolea
   );
 }
 
-function ProjectMetaRow({ project, className }: { project: ProjectDetail; className?: string }) {
+function ProjectMetaRow({
+  project,
+  className,
+  tr,
+}: {
+  project: ProjectDetail;
+  className?: string;
+  tr: (text?: string | null) => string;
+}) {
+  const { language, t } = useLanguage();
+  const locale = language === "en" ? "en-US" : "id-ID";
   const pill = "inline-flex items-center gap-1.5 text-muted-foreground text-sm";
   const published = project.is_published && project.published_at;
   if (!project.category && !project.date_range && !published && project.is_published) return null;
@@ -290,20 +328,20 @@ function ProjectMetaRow({ project, className }: { project: ProjectDetail; classN
       {project.category ? (
         <span className={pill}>
           <TagIcon className="size-4" />
-          {project.category}
+          {tr(project.category)}
         </span>
       ) : null}
       {project.date_range ? (
         <span className={cn(pill, "tabular-nums")}>
           <CalendarDateRangeIcon className="size-4" />
-          {project.date_range}
+          {translatePeriod(project.date_range, language)}
         </span>
       ) : null}
       {published ? (
         <span className={pill}>
           <GlobeAltIcon className="size-4" />
           <time dateTime={project.published_at!}>
-            {new Date(project.published_at!).toLocaleDateString("id-ID", {
+            {new Date(project.published_at!).toLocaleDateString(locale, {
               day: "numeric",
               month: "long",
               year: "numeric",
@@ -311,7 +349,7 @@ function ProjectMetaRow({ project, className }: { project: ProjectDetail; classN
           </time>
         </span>
       ) : !project.is_published ? (
-        <span className={cn(pill, "text-warning-foreground")}>Draf</span>
+        <span className={cn(pill, "text-warning-foreground")}>{t("Draf")}</span>
       ) : null}
     </div>
   );
@@ -324,7 +362,20 @@ export function ProjectDetailBody({
   project: ProjectDetail;
   bleed?: boolean;
 }) {
+  const { language, t } = useLanguage();
+  const locale = language === "en" ? "en-US" : "id-ID";
   const cover = project.media[0];
+  const tr = useAutoTranslate([
+    project.title,
+    project.category,
+    ...project.content.flatMap((block) => {
+      if (block.type === "heading" || block.type === "text") return [block.text];
+      if (block.type === "image" || block.type === "video") return [block.caption];
+      if (block.type === "link") return [block.label];
+      if (block.type === "gallery") return block.images.map((img) => img.caption);
+      return [];
+    }),
+  ]);
 
   return (
     <article>
@@ -348,25 +399,24 @@ export function ProjectDetailBody({
           <div className="absolute start-3 end-14 top-3 z-10 hidden flex-wrap items-center gap-1.5 lg:flex">
             {project.category ? (
               <span className={glassPillClass}>
-                {project.category}
+                {tr(project.category)}
               </span>
             ) : null}
             {project.date_range ? (
               <span className={cn(glassPillClass, "tabular-nums")}>
                 <CalendarDateRangeIcon className="size-4" />
-                {project.date_range}
+                {translatePeriod(project.date_range, language)}
               </span>
             ) : null}
           </div>
         ) : null}
-        <ProjectActions className="absolute end-3 bottom-3 z-10" key={project.id} project={project} />
         {project.published_at || !project.is_published ? (
-          <div className="absolute start-3 bottom-3 z-10 hidden max-w-[calc(100%-10rem)] lg:block">
+          <div className="absolute start-3 bottom-3 z-10 hidden max-w-[calc(100%-1.5rem)] lg:block">
             {project.is_published && project.published_at ? (
               <span className={glassPillClass}>
                 <GlobeAltIcon className="size-4" />
                 <time dateTime={project.published_at}>
-                  {new Date(project.published_at).toLocaleDateString("id-ID", {
+                  {new Date(project.published_at).toLocaleDateString(locale, {
                     day: "numeric",
                     month: "long",
                     year: "numeric",
@@ -374,7 +424,7 @@ export function ProjectDetailBody({
                 </time>
               </span>
             ) : (
-              <span className={cn(glassPillClass, "text-warning-foreground dark:text-warning-foreground")}>Draf</span>
+              <span className={cn(glassPillClass, "text-warning-foreground dark:text-warning-foreground")}>{t("Draf")}</span>
             )}
           </div>
         ) : null}
@@ -382,8 +432,8 @@ export function ProjectDetailBody({
 
       <header className="mt-8">
         {/* Layar kecil-sedang: info proyek di dalam konten (di atas judul), bukan di atas cover. */}
-        <ProjectMetaRow className="mb-3 lg:hidden" project={project} />
-        <h1 className="font-bold text-3xl tracking-tight sm:text-4xl">{project.title}</h1>
+        <ProjectMetaRow className="mb-3 lg:hidden" project={project} tr={tr} />
+        <h1 className="font-bold text-3xl tracking-tight sm:text-4xl">{tr(project.title)}</h1>
         {project.tech_stacks.length > 0 ? (
           <div className="mt-3">
             <TechStackRow logoOnly={bleed} stacks={project.tech_stacks} />
@@ -394,7 +444,7 @@ export function ProjectDetailBody({
       {project.content.length > 0 ? (
         <div className="mt-10 flex flex-col gap-7">
           {project.content.map((block, index) => (
-            <ContentBlock bleed={bleed} block={block} key={index} />
+            <ContentBlock bleed={bleed} block={block} key={index} tr={tr} />
           ))}
         </div>
       ) : null}

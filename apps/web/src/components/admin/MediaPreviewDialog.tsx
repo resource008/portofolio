@@ -1,7 +1,8 @@
+import type * as React from "react";
 import { useEffect, useRef } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { useLanguage } from "@/lib/language";
-import { Dialog, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogFooter, DialogHeader, DialogPanel, DialogPopup, DialogTitle } from "@/components/ui/dialog";
 
 interface MediaPreviewDialogProps {
   open: boolean;
@@ -11,6 +12,7 @@ interface MediaPreviewDialogProps {
   photos?: string[];
   index?: number;
   onIndexChange?: (index: number) => void;
+  footer?: React.ReactNode;
 }
 
 export default function MediaPreviewDialog({
@@ -21,6 +23,7 @@ export default function MediaPreviewDialog({
   photos,
   index = 0,
   onIndexChange,
+  footer,
 }: MediaPreviewDialogProps) {
   const { t } = useLanguage();
   title ??= t("Pratinjau");
@@ -103,7 +106,7 @@ export default function MediaPreviewDialog({
               <div className="relative">
                 <img
                   alt={title}
-                  className="mx-auto max-h-[75vh] w-auto rounded-lg border object-contain"
+                  className="mx-auto max-h-[75vh] w-auto max-w-full rounded-lg border object-contain"
                   src={currentUrl}
                 />
                 {canNav && (
@@ -130,6 +133,7 @@ export default function MediaPreviewDialog({
             )
           ) : null}
         </DialogPanel>
+        {footer ? <DialogFooter>{footer}</DialogFooter> : null}
       </DialogPopup>
     </Dialog>
   );

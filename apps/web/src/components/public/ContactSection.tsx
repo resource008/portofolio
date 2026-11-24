@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { PaperAirplaneIcon } from "@heroicons/react/24/outline";
 import { ApiError, apiSend } from "@/lib/api";
+import { translate, useLanguage } from "@/lib/language";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardPanel } from "@/components/ui/card";
@@ -28,22 +29,23 @@ function validateForm(form: FormState): Record<string, string[]> {
   const email = form.email.trim();
   const message = form.message.trim();
 
-  if (name.length < 3) errors.name = ["Nama minimal 3 karakter."];
-  else if (name.length > 100) errors.name = ["Nama maksimal 100 karakter."];
+  if (name.length < 3) errors.name = [translate("Nama minimal 3 karakter.")];
+  else if (name.length > 100) errors.name = [translate("Nama maksimal 100 karakter.")];
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = ["Format email tidak valid."];
+    errors.email = [translate("Format email tidak valid.")];
   } else if (email.length > 150) {
-    errors.email = ["Email maksimal 150 karakter."];
+    errors.email = [translate("Email maksimal 150 karakter.")];
   }
 
-  if (message.length < 10) errors.message = ["Pesan minimal 10 karakter."];
-  else if (message.length > 3000) errors.message = ["Pesan maksimal 3000 karakter."];
+  if (message.length < 10) errors.message = [translate("Pesan minimal 10 karakter.")];
+  else if (message.length > 3000) errors.message = [translate("Pesan maksimal 3000 karakter.")];
 
   return errors;
 }
 
 export function ContactSection() {
+  const { t } = useLanguage();
   const revealRef = useRef<HTMLDivElement>(null);
   useRevealOnScroll(revealRef);
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -56,8 +58,8 @@ export function ContactSection() {
       setForm(EMPTY_FORM);
       setErrors({});
       toastManager.add({
-        title: "Pesan terkirim",
-        description: "Terima kasih telah menghubungi saya!",
+        title: translate("Pesan terkirim"),
+        description: translate("Terima kasih telah menghubungi saya!"),
         type: "success",
       });
     },
@@ -66,7 +68,7 @@ export function ContactSection() {
         setErrors(error.errors);
       }
       toastManager.add({
-        title: "Gagal mengirim pesan",
+        title: translate("Gagal mengirim pesan"),
         description: (error as Error).message,
         type: "error",
       });
@@ -86,7 +88,7 @@ export function ContactSection() {
         >
           <img
             data-reveal="img"
-            alt="Jerapah lucu memakai headset realitas virtual"
+            alt={t("Jerapah lucu memakai headset realitas virtual")}
             className="size-36 shrink-0 sm:size-44 md:size-52 lg:size-60"
             decoding="async"
             loading="lazy"
@@ -94,11 +96,10 @@ export function ContactSection() {
           />
           <div className="mx-auto max-w-2xl lg:mx-0">
             <h2 className="font-bold text-3xl tracking-tight sm:text-4xl" data-reveal="title">
-              Terbuka untuk Proyek dan Kerja Sama
+              {t("Terbuka untuk Proyek dan Kerja Sama")}
             </h2>
             <p className="mt-3 text-muted-foreground" data-reveal="text">
-              Punya ide, proyek, atau peluang kolaborasi? Kirim pesan dan saya
-              akan membalasnya secepat mungkin.
+              {t("Punya ide, proyek, atau peluang kolaborasi? Kirim pesan dan saya akan membalasnya secepat mungkin.")}
             </p>
           </div>
         </div>
@@ -117,7 +118,7 @@ export function ContactSection() {
             >
               <div className="space-y-2">
                 <label className="font-medium text-sm" htmlFor="contact-name">
-                  Nama
+                  {t("Nama")}
                 </label>
                 <Input
                   autoComplete="name"
@@ -126,7 +127,7 @@ export function ContactSection() {
                   maxLength={100}
                   minLength={3}
                   onChange={(event) => update("name", event.target.value)}
-                  placeholder="Nama lengkap"
+                  placeholder={t("Nama lengkap")}
                   required
                   value={form.name}
                 />
@@ -145,7 +146,7 @@ export function ContactSection() {
                   id="contact-email"
                   maxLength={150}
                   onChange={(event) => update("email", event.target.value)}
-                  placeholder="nama@email.com"
+                  placeholder={t("nama@email.com")}
                   required
                   type="email"
                   value={form.email}
@@ -157,7 +158,7 @@ export function ContactSection() {
 
               <div className="space-y-2">
                 <label className="font-medium text-sm" htmlFor="contact-message">
-                  Pesan
+                  {t("Pesan")}
                 </label>
                 <Textarea
                   className={cn(FIELD_CLASS, errors.message && "border-destructive/60")}
@@ -165,7 +166,7 @@ export function ContactSection() {
                   maxLength={3000}
                   minLength={10}
                   onChange={(event) => update("message", event.target.value)}
-                  placeholder="Tulis pesan Anda di sini…"
+                  placeholder={t("Tulis pesan Anda di sini…")}
                   required
                   rows={5}
                   value={form.message}
@@ -181,7 +182,7 @@ export function ContactSection() {
                 type="submit"
               >
                 <PaperAirplaneIcon />
-                Kirim Pesan
+                {t("Kirim Pesan")}
               </Button>
             </form>
           </CardPanel>

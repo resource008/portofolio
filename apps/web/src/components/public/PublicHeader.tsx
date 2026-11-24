@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import type { HeroProfile } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
 import { consumeHeaderEntrance, ENTRANCE, useIntroDone } from "@/lib/intro";
+import { useLanguage } from "@/lib/language";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnnouncementBar } from "@/components/public/HeroSection";
@@ -28,6 +29,7 @@ function BrandLogo({ profile }: { profile?: HeroProfile }) {
 
 export function PublicHeader() {
   const [scrolled, setScrolled] = useState(false);
+  const { language, setLanguage, t } = useLanguage();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const isHome = pathname === "/";
@@ -107,7 +109,7 @@ export function PublicHeader() {
         >
         <a
           data-entrance="logo"
-          aria-label="Ke atas"
+          aria-label={t("Ke atas")}
           className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-full border border-border bg-background shadow-sm"
           href="/"
           onClick={(event) => {
@@ -120,8 +122,30 @@ export function PublicHeader() {
           <BrandLogo profile={profile} />
         </a>
 
-        <div className="flex items-center gap-2.5" data-entrance="toggle">
+        <div className="flex items-center gap-2" data-entrance="toggle">
           {showSearch ? <HeaderSearch /> : null}
+          <div
+            aria-label={t("Bahasa")}
+            className="inline-flex h-9 shrink-0 items-center rounded-full border border-border bg-background/50 p-0.5 font-medium text-xs backdrop-blur-md"
+            role="group"
+          >
+            {(["id", "en"] as const).map((lang) => (
+              <button
+                aria-pressed={language === lang}
+                className={cn(
+                  "h-full cursor-pointer rounded-full px-2.5 uppercase transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  language === lang
+                    ? "bg-foreground text-background shadow-xs"
+                    : "text-foreground/70 hover:text-foreground",
+                )}
+                key={lang}
+                onClick={() => setLanguage(lang)}
+                type="button"
+              >
+                {lang}
+              </button>
+            ))}
+          </div>
           <AnimatedThemeToggler className="grid size-9 shrink-0 place-items-center rounded-full border border-border bg-background/50 text-foreground/80 backdrop-blur-md transition-colors hover:bg-background hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring" />
         </div>
         </div>

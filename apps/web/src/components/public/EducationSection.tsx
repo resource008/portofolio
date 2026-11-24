@@ -3,8 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { AcademicCapIcon, ArrowUpRightIcon, CalendarIcon, DocumentTextIcon, TrophyIcon } from "@heroicons/react/24/outline";
 import type { Certificate, Education, EducationContent } from "@portofolio/shared";
 import { apiGet } from "@/lib/api";
+import { translatePeriod, useAutoTranslate } from "@/lib/auto-translate";
 import { campusLogo, logoFromDomain } from "@/lib/campus-logo";
 import { resolveCertLogo } from "@/lib/cert-logo";
+import { useLanguage } from "@/lib/language";
 import { safeHref } from "@/lib/sanitize";
 import { cn, isDocumentFile } from "@/lib/utils";
 import { useRef, useState } from "react";
@@ -13,7 +15,8 @@ import { useRevealOnScroll } from "@/components/public/use-reveal-on-scroll";
 import { MediaPlaceholder } from "@/components/public/MediaPlaceholder";
 import medal from "@/assets/illustrations/medal.webp";
 
-function EducationMainBlock({ item }: { item: Education }) {
+function EducationMainBlock({ item, tr }: { item: Education; tr: (text?: string | null) => string }) {
+  const { t } = useLanguage();
   const logo = item.logo_url ?? campusLogo(item.institution_name);
 
   return (
@@ -30,10 +33,10 @@ function EducationMainBlock({ item }: { item: Education }) {
         <h3 className="font-semibold text-base text-foreground leading-snug sm:text-lg">
           {item.institution_name}
         </h3>
-        <p className="text-muted-foreground text-sm">{item.degree_major}</p>
+        <p className="text-muted-foreground text-sm">{tr(item.degree_major)}</p>
         {item.gpa !== null ? (
           <p className="mt-2 text-muted-foreground text-xs tabular-nums">
-            IPK <span className="font-medium text-foreground">{item.gpa}</span>
+            {t("IPK")} <span className="font-medium text-foreground">{item.gpa}</span>
           </p>
         ) : null}
       </div>
@@ -102,23 +105,31 @@ function CertLogo({ src, className }: { src: string; className: string }) {
   );
 }
 
-function AchievementRow({ achievement }: { achievement: Certificate }) {
+function AchievementRow({
+  achievement,
+  tr,
+}: {
+  achievement: Certificate;
+  tr: (text?: string | null) => string;
+}) {
+  const { language } = useLanguage();
   const documents = achievement.documents ?? [];
   const file = documents.find(isDocumentFile);
   const link = documents.find((doc) => doc.trim() && !isDocumentFile(doc));
   const logo = certificateLogo(achievement.organization, link);
+  const titleText = tr(achievement.title);
 
   return (
     <li className="flex items-stretch overflow-hidden rounded-lg border border-border/60 bg-muted/50">
       {file ? (
         <a
-          aria-label={`Lihat sertifikat ${achievement.title}`}
+          aria-label={`Lihat sertifikat ${titleText}`}
           className="block aspect-[4/3] w-28 shrink-0 overflow-hidden bg-muted transition-opacity hover:opacity-90 sm:w-36"
           href={safeHref(file)}
           rel="noreferrer"
           target="_blank"
         >
-          <CertificatePreview src={file} title={achievement.title} />
+          <CertificatePreview src={file} title={titleText} />
         </a>
       ) : (
         <div className="grid aspect-[4/3] w-28 shrink-0 place-items-center bg-white text-muted-foreground sm:w-36 dark:bg-muted">
@@ -134,10 +145,10 @@ function AchievementRow({ achievement }: { achievement: Certificate }) {
           {achievement.period ? (
             <p className="mb-1.5 inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 font-medium text-primary text-xs tabular-nums">
               <CalendarIcon className="size-3.5" />
-              {achievement.period}
+              {translatePeriod(achievement.period, language)}
             </p>
           ) : null}
-          <p className="font-medium text-foreground text-sm">{achievement.title}</p>
+          <p className="font-medium text-foreground text-sm">{titleText}</p>
           {achievement.organization ? (
             <p className="mt-0.5 flex items-center gap-1.5 text-muted-foreground text-xs">
               {/* Saat kotak kiri berisi pratinjau sertifikat, logo penerbit tampil di samping namanya. */}
@@ -152,7 +163,7 @@ function AchievementRow({ achievement }: { achievement: Certificate }) {
         </div>
         {link ? (
           <a
-            aria-label={`Buka kredensial ${achievement.title}`}
+            aria-label={`Buka kredensial ${titleText}`}
             className="grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             href={safeHref(link)}
             rel="noreferrer"
@@ -166,14 +177,14 @@ function AchievementRow({ achievement }: { achievement: Certificate }) {
   );
 }
 
-function EducationCard({ item }: { item: Education }) {
+function EducationCard({ item, tr }: { item: Education; tr: (text?: string | null) => string }) {
   return (
     <article className="rounded-xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
-      <EducationMainBlock item={item} />
+      <EducationMainBlock item={item} tr={tr} />
 
       {item.description ? (
         <p className="mt-5 text-justify text-muted-foreground text-sm leading-relaxed">
-          {item.description}
+          {tr(item.description)}
         </p>
       ) : null}
 
@@ -181,7 +192,7 @@ function EducationCard({ item }: { item: Education }) {
         <div className="mt-5">
           <ul className="flex flex-col gap-3">
             {item.achievements.map((achievement) => (
-              <AchievementRow achievement={achievement} key={achievement.id} />
+              <AchievementRow achievement={achievement} key={achievement.id} tr={tr} />
             ))}
           </ul>
         </div>
@@ -190,7 +201,14 @@ function EducationCard({ item }: { item: Education }) {
   );
 }
 
-function EducationTimeline({ items }: { items: Education[] }) {
+function EducationTimeline({
+  items,
+  tr,
+}: {
+  items: Education[];
+  tr: (text?: string | null) => string;
+}) {
+  const { language, t } = useLanguage();
   return (
     <section className="relative scroll-mt-[7rem] bg-muted/20">
       <div className="relative mx-auto max-w-6xl px-4 sm:px-6">
@@ -199,8 +217,10 @@ function EducationTimeline({ items }: { items: Education[] }) {
             className="py-16 md:py-28"
             getKey={(item) => item.id}
             items={items}
-            renderItem={(item) => <EducationCard item={item} />}
-            renderLabel={(item) => `${item.range_date}${item.is_current ? " - Saat Ini" : ""}`}
+            renderItem={(item) => <EducationCard item={item} tr={tr} />}
+            renderLabel={(item) =>
+              `${translatePeriod(item.range_date, language)}${item.is_current ? ` - ${t("Saat Ini")}` : ""}`
+            }
           />
         </div>
       </div>
@@ -209,6 +229,7 @@ function EducationTimeline({ items }: { items: Education[] }) {
 }
 
 export function EducationSection() {
+  const { t } = useLanguage();
   const revealRef = useRef<HTMLDivElement>(null);
   useRevealOnScroll(revealRef);
   const { data, isLoading } = useQuery({
@@ -218,10 +239,19 @@ export function EducationSection() {
 
   const header = data?.section_header;
   const items = data?.items ?? [];
-  const title = header?.title || "Pendidikan & Pencapaian";
-  const description =
-    header?.description ||
-    "Latar belakang pendidikan formal dan pencapaian sertifikasi kompetensi yang menjadi fondasi perjalanan karier di bidang teknologi.";
+  const tr = useAutoTranslate([
+    header?.title,
+    header?.description,
+    ...items.flatMap((item) => [
+      item.degree_major,
+      item.description,
+      ...item.achievements.map((a) => a.title),
+    ]),
+  ]);
+  const title = header?.title ? tr(header.title) : t("Pendidikan & Pencapaian");
+  const description = header?.description
+    ? tr(header.description)
+    : t("Latar belakang pendidikan formal dan pencapaian sertifikasi kompetensi yang menjadi fondasi perjalanan karier di bidang teknologi.");
 
   const isEmpty = items.length === 0;
 
@@ -263,7 +293,7 @@ export function EducationSection() {
         </div>
       </section>
 
-      {!isEmpty ? <EducationTimeline items={items} /> : null}
+      {!isEmpty ? <EducationTimeline items={items} tr={tr} /> : null}
     </>
   );
 }

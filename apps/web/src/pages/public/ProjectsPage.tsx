@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { RectangleStackIcon } from "@heroicons/react/24/outline";
 import type { Project, ProjectDetail } from "@portofolio/shared";
 import { ApiError, apiGet } from "@/lib/api";
+import { useLanguage } from "@/lib/language";
 import NotFoundPage from "@/pages/NotFoundPage";
 import { Spinner } from "@/components/ui/spinner";
 import { PublicHeader } from "@/components/public/PublicHeader";
@@ -15,6 +16,7 @@ import { ENTRANCE } from "@/lib/intro";
 import giraffeVR from "@/assets/illustrations/giraffe-vr-headset.webp";
 
 export default function ProjectsPage() {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState<Project | null>(null);
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -43,8 +45,8 @@ export default function ProjectsPage() {
   if (slug && !selected && slugError instanceof ApiError && slugError.status === 404) {
     return (
       <NotFoundPage
-        description="Proyek yang kamu cari tidak tersedia, sudah dihapus, atau link-nya salah."
-        title="Proyek tidak ditemukan"
+        description={t("Proyek yang kamu cari tidak tersedia, sudah dihapus, atau link-nya salah.")}
+        title={t("Proyek tidak ditemukan")}
       />
     );
   }
@@ -56,18 +58,17 @@ export default function ProjectsPage() {
         <div className="mx-auto flex max-w-3xl items-center gap-4 sm:gap-8" ref={revealRef}>
           <img
             data-reveal="img"
-            alt="Jerapah lucu memakai headset realitas virtual"
+            alt={t("Jerapah lucu memakai headset realitas virtual")}
             className="hidden size-40 shrink-0 sm:block md:size-48"
             decoding="async"
             src={giraffeVR}
           />
           <div className="w-full text-center sm:w-auto sm:text-left">
             <h1 className="font-bold text-3xl tracking-tight sm:text-4xl" data-reveal="title">
-              Proyek
+              {t("Proyek")}
             </h1>
             <p className="mt-2 text-muted-foreground text-sm sm:mt-3 sm:text-base" data-reveal="text">
-              Kumpulan proyek yang pernah saya kerjakan, mulai dari merancang konsep,
-              mengembangkan, hingga meluncurkannya.
+              {t("Kumpulan proyek yang pernah saya kerjakan, mulai dari merancang konsep, mengembangkan, hingga meluncurkannya.")}
             </p>
           </div>
         </div>
@@ -88,9 +89,9 @@ export default function ProjectsPage() {
               <RectangleStackIcon aria-hidden className="size-7" />
             </span>
             <div>
-              <p className="font-medium text-sm">Belum ada proyek</p>
+              <p className="font-medium text-sm">{t("Belum ada proyek")}</p>
               <p className="mt-1 text-muted-foreground text-sm">
-                Proyek yang sudah dipublikasikan akan tampil di sini.
+                {t("Proyek yang sudah dipublikasikan akan tampil di sini.")}
               </p>
             </div>
           </div>

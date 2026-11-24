@@ -4,6 +4,7 @@ import { HeartIcon, ShareIcon } from "@heroicons/react/24/outline";
 import { HeartIcon as HeartSolidIcon } from "@heroicons/react/24/solid";
 import type { ProjectDetail } from "@portofolio/shared";
 import { apiSend } from "@/lib/api";
+import { translate, useLanguage } from "@/lib/language";
 import { cn } from "@/lib/utils";
 import { toastManager } from "@/components/ui/toast";
 import { ClickSpark } from "@/components/ui/ClickSpark";
@@ -41,9 +42,10 @@ export const glassPillClass =
   "inline-flex h-9 items-center gap-1.5 rounded-full border border-white/40 bg-white/45 px-3 font-medium text-foreground text-sm backdrop-blur-md backdrop-saturate-150 dark:border-white/15 dark:bg-black/30 dark:text-white";
 
 const buttonClass =
-  `${glassPillClass} transition-colors hover:bg-white/60 dark:hover:bg-black/45`;
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full border border-white/40 bg-white/45 px-4 font-medium text-base text-foreground backdrop-blur-md backdrop-saturate-150 transition-colors hover:bg-white/60 dark:border-white/15 dark:bg-black/30 dark:text-white dark:hover:bg-black/45";
 
 export function ProjectActions({ project, className }: { project: ProjectDetail; className?: string }) {
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const [liked, setLiked] = useState(() => readLiked().includes(project.id));
   const [likes, setLikes] = useState(project.likes_count);
@@ -67,7 +69,7 @@ export function ProjectActions({ project, className }: { project: ProjectDetail;
     } catch (err) {
       apply(!next, -delta);
       toastManager.add({
-        title: next ? "Gagal menyukai proyek" : "Gagal membatalkan suka",
+        title: next ? translate("Gagal menyukai proyek") : translate("Gagal membatalkan suka"),
         description: (err as Error).message,
         type: "error",
       });
@@ -81,22 +83,22 @@ export function ProjectActions({ project, className }: { project: ProjectDetail;
         await navigator.share({ title: project.title, url });
       } else {
         await navigator.clipboard.writeText(url);
-        toastManager.add({ title: "Tautan disalin", type: "success" });
+        toastManager.add({ title: translate("Tautan disalin"), type: "success" });
       }
     } catch (err) {
       // Pengguna membatalkan dialog share — tidak dihitung.
       if ((err as Error).name === "AbortError") return;
-      toastManager.add({ title: "Gagal membagikan", description: (err as Error).message, type: "error" });
+      toastManager.add({ title: translate("Gagal membagikan"), description: (err as Error).message, type: "error" });
       return;
     }
     track("share", project.id).catch(() => {});
   };
 
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div className={cn("flex items-center gap-2", className)}>
       <ClickSpark active={!liked}>
         <button
-          aria-label={liked ? "Batal sukai proyek" : "Sukai proyek"}
+          aria-label={liked ? t("Batal sukai proyek") : t("Sukai proyek")}
           aria-pressed={liked}
           className={buttonClass}
           onClick={toggleLike}
@@ -109,9 +111,9 @@ export function ProjectActions({ project, className }: { project: ProjectDetail;
             transition={{ duration: 0.35, ease: "easeOut" }}
           >
             {liked ? (
-              <HeartSolidIcon className="size-4.5 text-rose-500" />
+              <HeartSolidIcon className="size-5 text-rose-500" />
             ) : (
-              <HeartIcon className="size-4.5" />
+              <HeartIcon className="size-5" />
             )}
           </motion.span>
           <Counter value={likes} />
@@ -119,8 +121,8 @@ export function ProjectActions({ project, className }: { project: ProjectDetail;
       </ClickSpark>
       <ClickSpark sparkColor="#38bdf8">
         <button
-          aria-label="Bagikan proyek"
-          className={buttonClass}
+          aria-label={t("Bagikan proyek")}
+          className={cn(buttonClass, "px-3.5")}
           onClick={() => {
             setShareTaps((n) => n + 1);
             share();
@@ -133,7 +135,7 @@ export function ProjectActions({ project, className }: { project: ProjectDetail;
             key={shareTaps}
             transition={{ duration: 0.35, ease: "easeOut" }}
           >
-            <ShareIcon className="size-4.5" />
+            <ShareIcon className="size-5" />
           </motion.span>
         </button>
       </ClickSpark>
