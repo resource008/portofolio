@@ -151,6 +151,7 @@ export function DrawerPopup({
   className,
   children,
   showCloseButton = false,
+  showBackdrop = true,
   position: positionProp,
   variant = "default",
   showBar = false,
@@ -159,6 +160,7 @@ export function DrawerPopup({
   ...props
 }: DrawerPrimitive.Popup.Props & {
   showCloseButton?: boolean;
+  showBackdrop?: boolean;
   position?: DrawerPosition;
   variant?: "default" | "straight" | "inset";
   showBar?: boolean;
@@ -171,10 +173,15 @@ export function DrawerPopup({
 
   const popup = (
     <DrawerPortal {...portalProps}>
-      <DrawerBackdrop />
-      <DrawerViewport position={position} variant={variant}>
+      {showBackdrop && <DrawerBackdrop />}
+      <DrawerViewport
+        className={!showBackdrop ? "pointer-events-none" : undefined}
+        position={position}
+        variant={variant}
+      >
         <DrawerPrimitive.Popup
           className={cn(
+            !showBackdrop && "pointer-events-auto",
             "relative flex min-h-0 w-full min-w-0 flex-col bg-popover not-dark:bg-clip-padding text-popover-foreground shadow-lg/5 outline-none transition-[transform,box-shadow,height,background-color] duration-450 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform [--peek:calc(--spacing(6)-1px)] [--scale-base:calc(max(0,1-(var(--nested-drawers)*var(--stack-step))))] [--scale:clamp(0,calc(var(--scale-base)+(var(--stack-step)*var(--stack-progress))),1)] [--shrink:calc(1-var(--scale))] [--stack-peek-offset:max(0px,calc((var(--nested-drawers)-var(--stack-progress))*var(--peek)))] [--stack-progress:clamp(0,var(--drawer-swipe-progress),1)] [--stack-step:0.05] before:pointer-events-none before:absolute before:inset-0 before:shadow-[0_1px_--theme(--color-black/4%)] after:pointer-events-none after:absolute after:bg-popover data-swiping:select-none data-nested-drawer-open:pointer-events-none data-nested-drawer-open:overflow-hidden data-nested-drawer-open:bg-[color-mix(in_srgb,var(--popover),var(--color-black)_calc(2%*(var(--nested-drawers)-var(--stack-progress))))] data-ending-style:shadow-transparent data-starting-style:shadow-transparent data-ending-style:duration-[calc(var(--drawer-swipe-strength)*400ms)] dark:data-nested-drawer-open:bg-[color-mix(in_srgb,var(--popover),var(--color-black)_calc(6%*(var(--nested-drawers)-var(--stack-progress))))] dark:before:shadow-[0_-1px_--theme(--color-white/6%)]",
             "touch-none",
             position === "bottom" &&

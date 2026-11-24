@@ -1,7 +1,7 @@
 import type { ReactElement } from "react";
 import { ArrowRightStartOnRectangleIcon, ComputerDesktopIcon, MoonIcon, SparklesIcon, SunIcon } from "@heroicons/react/24/outline";
 import { useTheme, type Theme } from "@/lib/theme";
-import { useLanguage, type Language } from "@/lib/language";
+import { useLanguage } from "@/lib/language";
 import { useMotionEnabled } from "@/lib/motion";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -44,31 +44,6 @@ const THEME_OPTIONS = [
   { value: "system", label: "Sistem", icon: ComputerDesktopIcon },
 ] as const;
 
-const LANGUAGE_OPTIONS = [
-  { value: "id", label: "Indonesia" },
-  { value: "en", label: "English" },
-] as const;
-
-function LanguageTabs({
-  value,
-  onChange,
-}: {
-  value: Language;
-  onChange: (language: Language) => void;
-}) {
-  return (
-    <Tabs onValueChange={(next) => onChange(next as Language)} value={value}>
-      <TabsList className="w-full" size="sm">
-        {LANGUAGE_OPTIONS.map(({ value: option, label }) => (
-          <TabsTab className="flex-1" key={option} value={option}>
-            {label}
-          </TabsTab>
-        ))}
-      </TabsList>
-    </Tabs>
-  );
-}
-
 function ThemeTabs({ value, onChange }: { value: Theme; onChange: (theme: Theme) => void }) {
   const { t } = useLanguage();
   return (
@@ -99,7 +74,7 @@ export default function ProfileMenu({
 }: ProfileMenuProps) {
   const { theme, setTheme } = useTheme();
   const { motionEnabled, setMotionEnabled } = useMotionEnabled();
-  const { language, setLanguage, t } = useLanguage();
+  const { t } = useLanguage();
   const initial = (user?.name ?? "A").charAt(0).toUpperCase();
 
   if (mode === "drawer") {
@@ -138,10 +113,6 @@ export default function ProfileMenu({
             <div>
               <p className="mb-2 font-medium text-muted-foreground text-xs">{t("Tema")}</p>
               <ThemeTabs onChange={setTheme} value={theme} />
-            </div>
-            <div>
-              <p className="mb-2 font-medium text-muted-foreground text-xs">{t("Bahasa")}</p>
-              <LanguageTabs onChange={setLanguage} value={language} />
             </div>
             <label className="flex items-center justify-between gap-4">
               <span className="flex items-center gap-2 text-sm">
@@ -185,11 +156,6 @@ export default function ProfileMenu({
         <div className="px-2 py-2">
           <p className="mb-2 font-medium text-muted-foreground text-xs">{t("Tema")}</p>
           <ThemeTabs onChange={setTheme} value={theme} />
-        </div>
-
-        <div className="px-2 pb-2">
-          <p className="mb-2 font-medium text-muted-foreground text-xs">{t("Bahasa")}</p>
-          <LanguageTabs onChange={setLanguage} value={language} />
         </div>
 
         <MenuSeparator />

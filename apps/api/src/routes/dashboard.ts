@@ -69,11 +69,12 @@ async function getStorageBreakdown(): Promise<StorageBreakdown> {
 }
 
 dashboardRoutes.get("/admin/dashboard/stats", requireAdmin, async (c) => {
-  const [likes] = await sql<{ count: number }[]>`
-    SELECT COUNT(*)::int AS count FROM analytics_logs WHERE event_type = 'like'
-  `;
-  const [projects] = await sql<{ count: number }[]>`
-    SELECT COUNT(*)::int AS count FROM projects
+  const [projectStats] = await sql<{ total_likes: number; total_projects: number }[]>`
+    SELECT
+      COALESCE(SUM(likes_count), 0)::int AS total_likes,
+      COUNT(*)::int AS total_projects
+    FROM projects
+    WHERE is_published = TRUE
   `;
   const [unread] = await sql<{ count: number }[]>`
     SELECT COUNT(*)::int AS count FROM contact_inboxes WHERE is_read = FALSE
@@ -97,8 +98,8 @@ dashboardRoutes.get("/admin/dashboard/stats", requireAdmin, async (c) => {
 
   return ok(c, {
     summary: {
-      total_likes: likes?.count ?? 0,
-      total_projects: projects?.count ?? 0,
+      total_likes: projectStats?.total_likes ?? 0,
+      total_projects: projectStats?.total_projects ?? 0,
       total_photos: (projectPhotos?.count ?? 0) + (experiencePhotos?.count ?? 0),
       total_unread_messages: unread?.count ?? 0,
     },
